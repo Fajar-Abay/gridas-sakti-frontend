@@ -59,7 +59,7 @@ export default function VisitasiPage() {
       const raw = res.data.data;
       setIndustris(Array.isArray(raw) ? raw : (raw as any).data || []);
     } catch (err) {
-      console.error('Failed to fetch industris');
+      if (import.meta.env.DEV) console.error('Failed to fetch industris');
     }
   }, []);
 
@@ -71,7 +71,7 @@ export default function VisitasiPage() {
       const users = Array.isArray(raw) ? raw : (raw as any).data || [];
       setAllGurus(users.filter((u: UserType) => u.role === 'guru' && u.guru));
     } catch (err) {
-      console.error('Failed to fetch gurus');
+      if (import.meta.env.DEV) console.error('Failed to fetch gurus');
     }
   }, [currentUser]);
 

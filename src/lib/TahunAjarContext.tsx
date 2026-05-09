@@ -54,7 +54,7 @@ export const TahunAjarProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         }
       }
     } catch (error) {
-      console.error('Failed to fetch tahun ajar:', error);
+      if (import.meta.env.DEV) console.error('Failed to fetch tahun ajar:', error);
     } finally {
       setLoading(false);
     }

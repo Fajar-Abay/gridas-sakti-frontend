@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Helmet } from 'react-helmet-async';
 import TopBar from '@/components/layout/TopBar';
 import { periodePklApi, userApi, industriApi, tahunAjarApi } from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
@@ -46,7 +47,7 @@ export default function PeriodePKLPage() {
     setLoading(true);
     try {
       const res = await periodePklApi.list();
-      console.log('Periode PKL API Response:', res.data);
+
       const rawData = res.data.data as any;
       
       let items = [];
@@ -78,7 +79,7 @@ export default function PeriodePKLPage() {
       setIndustris(Array.isArray(iRes.data.data) ? iRes.data.data : (iRes.data.data as any).data || []);
       setTahuns(Array.isArray(tRes.data.data) ? tRes.data.data : (tRes.data.data as any).data || []);
     } catch (err) {
-      console.error('Failed to fetch reference data');
+      if (import.meta.env.DEV) console.error('Failed to fetch reference data');
     }
   }, []);
 
@@ -228,6 +229,10 @@ export default function PeriodePKLPage() {
 
   return (
     <div className="min-h-screen">
+      <Helmet>
+        <title>Penempatan PKL | GRIDAS SAKTI</title>
+        <meta name="description" content="Kelola distribusi dan plotting siswa PKL ke berbagai industri mitra SMKN 2 Sumedang." />
+      </Helmet>
       {toast}
       <TopBar title="Penempatan PKL" subtitle="Kelola distribusi siswa di berbagai industri" />
 

@@ -94,11 +94,19 @@ api.interceptors.response.use(
     if (import.meta.env.DEV) {
       console.error(`[API Response Error] ${error.config?.url}`, error.response?.data || error.message);
     }
-    /* Jika 401 Unauthorized → hapus token dan redirect ke login */
+    /* Jika 401 Unauthorized → hapus token dan redirect ke login.
+       KECUALI jika request berasal dari endpoint login itu sendiri,
+       karena error login harus ditangani oleh form (tampilkan toast). */
     if (error.response?.status === 401) {
-      removeToken();
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
+      const requestUrl = error.config?.url || '';
+      const isLoginRequest = requestUrl.includes('/auth/login');
+
+      if (!isLoginRequest) {
+        removeToken();
+        // Dispatch custom event agar App.tsx bisa navigate tanpa reload
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+        }
       }
     }
     return Promise.reject(error);

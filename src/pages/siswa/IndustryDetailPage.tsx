@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Helmet } from 'react-helmet-async';
 import TopBar from '@/components/layout/TopBar';
 import { industriApi, pengajuanApi } from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
@@ -80,6 +81,10 @@ export default function IndustryDetailPage() {
 
   return (
     <div className="min-h-screen">
+      <Helmet>
+        <title>{industri.nama_industri} — Detail Industri | GRIDAS SAKTI</title>
+        <meta name="description" content={`Informasi lengkap tentang ${industri.nama_industri} — ${industri.bidang_industri}. Lokasi, kontak, dan kuota PKL di SMKN 2 Sumedang.`} />
+      </Helmet>
       {toast}
       <TopBar title="Detail Industri" />
 

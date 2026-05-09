@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import TopBar from '@/components/layout/TopBar';
 import { industriApi, pengajuanApi } from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
@@ -62,6 +63,10 @@ export default function IndustryListPage() {
 
   return (
     <div className="min-h-screen">
+      <Helmet>
+        <title>Daftar Mitra Industri PKL | GRIDAS SAKTI</title>
+        <meta name="description" content="Jelajahi daftar perusahaan dan industri mitra PKL SMKN 2 Sumedang. Temukan tempat PKL yang sesuai dengan jurusan Anda." />
+      </Helmet>
       {toast}
       <TopBar title="Daftar Mitra" subtitle="Industri mitra PKL" />
 

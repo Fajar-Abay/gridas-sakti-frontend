@@ -6,6 +6,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import TopBar from '@/components/layout/TopBar';
 import { SkeletonList } from '@/components/ui/SkeletonCard';
 import { useToast } from '@/components/ui/Toast';
@@ -97,6 +98,10 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen">
+      <Helmet>
+        <title>Dashboard | GRIDAS SAKTI</title>
+        <meta name="description" content="Dashboard utama GRIDAS SAKTI — Sistem Manajemen PKL SMKN 2 Sumedang." />
+      </Helmet>
       {toast}
       <TopBar title="Dashboard" subtitle={today} />
 

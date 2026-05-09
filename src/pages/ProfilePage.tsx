@@ -78,7 +78,7 @@ export default function ProfilePage() {
           }
         }
       } catch (err) {
-        console.error("Gagal refresh profil:", err);
+        if (import.meta.env.DEV) console.error("Gagal refresh profil:", err);
       }
     };
     refreshUser();

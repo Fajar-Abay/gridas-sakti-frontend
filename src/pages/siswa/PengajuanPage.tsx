@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import TopBar from '@/components/layout/TopBar';
 import { pengajuanApi } from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
@@ -134,6 +135,10 @@ export default function PengajuanPage() {
 
   return (
     <div className="min-h-screen">
+      <Helmet>
+        <title>Pengajuan PKL | GRIDAS SAKTI</title>
+        <meta name="description" content="Ajukan tempat Praktek Kerja Lapangan (PKL) ke industri mitra atau instansi mandiri di SMKN 2 Sumedang." />
+      </Helmet>
       {toast}
       <TopBar title="Pengajuan PKL" subtitle="Pengajuan & riwayat penempatan" />
 

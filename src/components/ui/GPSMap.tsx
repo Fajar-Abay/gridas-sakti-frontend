@@ -210,7 +210,7 @@ export default function GPSMap({ lokasiPKL, onPositionUpdate, onStatusChange }: 
     };
 
     const error = (err: GeolocationPositionError) => {
-      console.warn('GPS Attempt Failed:', err.code, err.message);
+      if (import.meta.env.DEV) console.warn('GPS Attempt Failed:', err.code, err.message);
       
       // Stop watching if we hit a fatal error or repeated timeout
       if (watchId.current !== null) {
@@ -221,9 +221,9 @@ export default function GPSMap({ lokasiPKL, onPositionUpdate, onStatusChange }: 
       // Jika error 3 (Timeout) dan kita sedang pakai High Accuracy, 
       // coba lagi sekali tanpa High Accuracy (Standar/Wi-Fi based)
       if (err.code === 3 && options.enableHighAccuracy) {
-        console.log('Retrying with Standard Accuracy...');
+        if (import.meta.env.DEV) console.log('Retrying with Standard Accuracy...');
         navigator.geolocation.getCurrentPosition(success, (err2) => {
-          console.error('GPS Final Failure:', err2.message);
+          if (import.meta.env.DEV) console.error('GPS Final Failure:', err2.message);
           setGpsStatus('error');
           onPositionUpdate?.(null);
         }, { ...options, enableHighAccuracy: false, timeout: 5000 });

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import TopBar from '@/components/layout/TopBar';
 import { jurnalApi, kategoriJurnalApi, monitoringApi } from '@/lib/api';
 import { getUser } from '@/lib/auth';
@@ -91,7 +92,7 @@ export default function JurnalPage() {
       const res = await monitoringApi.lokasiPKL();
       setLokasiData(res.data.data);
     } catch (err) {
-      console.error('Failed to fetch lokasi:', err);
+      if (import.meta.env.DEV) console.error('Failed to fetch lokasi:', err);
     }
   }, []);
 
@@ -242,6 +243,10 @@ export default function JurnalPage() {
 
   return (
     <div className="min-h-screen">
+      <Helmet>
+        <title>Jurnal Harian PKL | GRIDAS SAKTI</title>
+        <meta name="description" content="Catat dan kelola aktivitas harian Praktek Kerja Lapangan (PKL) dengan verifikasi GPS di SMKN 2 Sumedang." />
+      </Helmet>
       {toast}
       <TopBar
         title="Jurnal Harian"
