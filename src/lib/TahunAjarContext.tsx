@@ -26,7 +26,8 @@ export const TahunAjarProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setLoading(true);
     try {
       const res = await tahunAjarApi.list();
-      const data = res.data.data;
+      const rawData = res.data.data;
+      const data = Array.isArray(rawData) ? rawData : (rawData as any).data || [];
       if (Array.isArray(data)) {
         setAllTahunAjar(data);
         

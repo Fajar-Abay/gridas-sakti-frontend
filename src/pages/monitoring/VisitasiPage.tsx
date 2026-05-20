@@ -66,7 +66,7 @@ export default function VisitasiPage() {
   const fetchGurus = useCallback(async () => {
     if (currentUser?.role !== 'admin') return;
     try {
-      const res = await userApi.list();
+      const res = await userApi.list({ per_page: 1000 });
       const raw = res.data.data;
       const users = Array.isArray(raw) ? raw : (raw as any).data || [];
       setAllGurus(users.filter((u: UserType) => u.role === 'guru' && u.guru));

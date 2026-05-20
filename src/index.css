@@ -132,7 +132,7 @@ a { color: inherit; text-decoration: none; transition: opacity 0.2s; }
 
 /* ── Card ── */
 .card {
-  background: var(--bg-surface);
+  background-color: var(--bg-surface);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-color);

@@ -185,7 +185,7 @@ export default function PengajuanPage() {
               {/* CTA to browse industry */}
               <Link
                 to="/daftar-industri"
-                className="block card bg-gradient-to-br from-indigo-600 to-indigo-800 text-white mb-5 relative overflow-hidden group"
+                className="block bg-gradient-to-br from-indigo-600 to-indigo-800 text-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200 mb-5 relative overflow-hidden group"
               >
                 <div className="relative z-10">
                   <div className="flex items-center gap-3 mb-2">

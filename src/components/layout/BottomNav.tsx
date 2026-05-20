@@ -7,7 +7,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Users, BookOpen, ClipboardList,
-  User, Briefcase, FileText, Award
+  User, Briefcase, FileText, Award, MapPin
 } from 'lucide-react';
 import { getUser } from '@/lib/auth';
 import type { UserRole } from '@/lib/types';
@@ -23,9 +23,9 @@ function getNavItems(role: UserRole): NavItem[] {
     case 'siswa':
       return [
         { href: '/dashboard',       label: 'Beranda',   icon: <LayoutDashboard size={20}/> },
-        { href: '/daftar-industri', label: 'Mitra',     icon: <Briefcase size={20}/> },
+        { href: '/presensi',        label: 'Absen',     icon: <MapPin size={20}/> },
         { href: '/jurnal',          label: 'Jurnal',    icon: <BookOpen size={20}/> },
-        { href: '/pengajuan-pkl',   label: 'Pengajuan', icon: <ClipboardList size={20}/> },
+        { href: '/daftar-industri', label: 'Mitra',     icon: <Briefcase size={20}/> },
         { href: '/profile',         label: 'Profil',    icon: <User size={20}/> },
       ];
     case 'guru':

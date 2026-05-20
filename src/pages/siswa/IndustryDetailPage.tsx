@@ -97,7 +97,7 @@ export default function IndustryDetailPage() {
         {/* ── Header Card ── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          className="card bg-gradient-to-br from-blue-600 to-indigo-800 text-white mb-6 relative overflow-hidden"
+          className="bg-gradient-to-br from-blue-600 to-indigo-800 text-white rounded-2xl p-5 shadow-sm mb-6 relative overflow-hidden"
         >
           <div className="relative z-10 flex items-start gap-5">
             <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">

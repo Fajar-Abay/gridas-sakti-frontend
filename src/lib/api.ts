@@ -191,7 +191,7 @@ export const dashboardApi = {
    MASTER DATA — JURUSAN
    ════════════════════════════════════════════ */
 export const jurusanApi = {
-  list:   ()                           => api.get<ApiResponse<Jurusan[]>>('/jurusan?per_page=100'),
+  list:   ()                           => api.get<ApiResponse<Jurusan[]>>('/jurusan?per_page=1000'),
   show:   (id: number)                 => api.get<ApiResponse<Jurusan>>(`/jurusan/${id}`),
   create: (payload: Omit<Jurusan, 'id'>) => api.post<ApiResponse<Jurusan>>('/jurusan', payload),
   update: (id: number, payload: Omit<Jurusan, 'id'>) => api.put<ApiResponse<Jurusan>>(`/jurusan/${id}`, payload),
@@ -202,7 +202,7 @@ export const jurusanApi = {
    MASTER DATA — KELAS
    ════════════════════════════════════════════ */
 export const kelasApi = {
-  list:   ()                          => api.get<ApiResponse<Kelas[]>>('/kelas?per_page=100'),
+  list:   ()                          => api.get<ApiResponse<Kelas[]>>('/kelas?per_page=1000'),
   show:   (id: number)                => api.get<ApiResponse<Kelas>>(`/kelas/${id}`),
   create: (payload: { nama_kelas: string; jurusan_id: number }) =>
     api.post<ApiResponse<Kelas>>('/kelas', payload),
@@ -218,7 +218,7 @@ export const kelasApi = {
    MASTER DATA — TAHUN AJAR
    ════════════════════════════════════════════ */
 export const tahunAjarApi = {
-  list:   ()                           => api.get<ApiResponse<TahunAjar[]>>('/tahun-ajar?per_page=100'),
+  list:   ()                           => api.get<ApiResponse<TahunAjar[]>>('/tahun-ajar?per_page=1000'),
   show:   (id: number)                 => api.get<ApiResponse<TahunAjar>>(`/tahun-ajar/${id}`),
   create: (payload: Omit<TahunAjar, 'id'>) => api.post<ApiResponse<TahunAjar>>('/tahun-ajar', payload),
   update: (id: number, payload: Partial<TahunAjar>) => api.put<ApiResponse<TahunAjar>>(`/tahun-ajar/${id}`, payload),
@@ -230,7 +230,7 @@ export const tahunAjarApi = {
    MASTER DATA — INDUSTRI
    ════════════════════════════════════════════ */
 export const industriApi = {
-  list: (params?: any) => api.get<ApiResponse<Industri[]>>('/industri', { params }),
+  list: (params?: any) => api.get<ApiResponse<Industri[]>>('/industri', { params: { per_page: 1000, ...params } }),
   show: (id: number) => api.get<ApiResponse<Industri>>(`/industri/${id}`),
   create: (payload: any) => api.post<ApiResponse<Industri>>('/industri', payload),
   update: (id: number, payload: any) => api.put<ApiResponse<Industri>>(`/industri/${id}`, payload),
@@ -252,7 +252,7 @@ export const industriApi = {
    PERIODE PKL (Penempatan)
    ════════════════════════════════════════════ */
 export const periodePklApi = {
-  list:   ()           => api.get<ApiResponse<PeriodePkl[]>>('/periode-pkl?per_page=100'),
+  list:   ()           => api.get<ApiResponse<PeriodePkl[]>>('/periode-pkl?per_page=10000'),
   show:   (id: number) => api.get<ApiResponse<PeriodePkl>>(`/periode-pkl/${id}`),
   create: (payload: Omit<PeriodePkl, 'id'>) =>
     api.post<ApiResponse<PeriodePkl>>('/periode-pkl', payload),
@@ -271,10 +271,10 @@ export const periodePklApi = {
    ════════════════════════════════════════════ */
 export const pengajuanApi = {
   /** List semua pengajuan (Admin) */
-  listAll: () => api.get<ApiResponse<PengajuanPkl[]>>('/admin/pengajuan-pkl'),
+  listAll: () => api.get<ApiResponse<PengajuanPkl[]>>('/admin/pengajuan-pkl?per_page=10000'),
 
   /** List pengajuan milik siswa sendiri */
-  list: () => api.get<ApiResponse<PengajuanPkl[]>>('/pengajuan-pkl'),
+  list: () => api.get<ApiResponse<PengajuanPkl[]>>('/pengajuan-pkl?per_page=1000'),
 
   /** Pengajuan oleh siswa sendiri (siswa_id otomatis dari backend) */
   create: (payload: { industri_id: number }) =>
@@ -368,7 +368,7 @@ export const suratApi = {
    ════════════════════════════════════════════ */
 export const jurnalApi = {
   /** List jurnal milik siswa yang sedang login */
-  list: () => api.get<ApiResponse<Jurnal[]>>('/jurnal'),
+  list: () => api.get<ApiResponse<Jurnal[]>>('/jurnal?per_page=10000'),
 
   /** Detail satu jurnal */
   show: (id: number) => api.get<ApiResponse<Jurnal>>(`/jurnal/${id}`),
@@ -445,7 +445,7 @@ export const profileApi = {
    ACTIVITY LOGS (Admin)
    ════════════════════════════════════════════ */
 export const logsApi = {
-  list: () => api.get<ApiResponse<ActivityLog[]>>('/logs'),
+  list: () => api.get<ApiResponse<ActivityLog[]>>('/logs?per_page=1000'),
 };
 
 /* ════════════════════════════════════════════
@@ -480,7 +480,7 @@ export const penilaianApi = {
    VISITASI
    ════════════════════════════════════════════ */
 export const visitasiApi = {
-  list:   ()           => api.get<ApiResponse<Visitasi[]>>('/visitasi'),
+  list:   (params?: any) => api.get<ApiResponse<Visitasi[]>>('/visitasi', { params: { per_page: 1000, ...params } }),
   show:   (id: number) => api.get<ApiResponse<Visitasi>>(`/visitasi/${id}`),
   create: (payload: FormData) => 
     api.post<ApiResponse<Visitasi>>('/visitasi', payload, {
@@ -491,6 +491,31 @@ export const visitasiApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
   delete: (id: number) => api.delete<ApiResponse<null>>(`/visitasi/${id}`),
+};
+
+/* ════════════════════════════════════════════
+   PRESENSI (ABSENSI) PKL
+   ════════════════════════════════════════════ */
+export const presensiApi = {
+  today: () => api.get<ApiResponse<any>>('/presensi/today'),
+  submit: (payload: { status: 'hadir' | 'sakit' | 'izin'; latitude?: number; longitude?: number; keterangan_izin?: string; lampiran_izin?: File }) => {
+    const form = new FormData();
+    form.append('status', payload.status);
+    if (payload.latitude !== undefined) form.append('latitude', payload.latitude.toString());
+    if (payload.longitude !== undefined) form.append('longitude', payload.longitude.toString());
+    if (payload.keterangan_izin) form.append('keterangan_izin', payload.keterangan_izin);
+    if (payload.lampiran_izin) form.append('lampiran_izin', payload.lampiran_izin);
+    return api.post<ApiResponse<any>>('/presensi', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  submitPulang: (payload: { latitude: number; longitude: number }) =>
+    api.post<ApiResponse<any>>('/presensi/pulang', payload),
+  riwayat: () => api.get<ApiResponse<any[]>>('/presensi/riwayat'),
+  siswa: (params?: { date?: string; start_date?: string; end_date?: string }) => api.get<ApiResponse<any[]>>('/presensi/siswa', { params }),
+  verify: (id: number | 'create-manual', payload: { is_verified: boolean; catatan_pembimbing?: string; siswa_id?: number; tanggal?: string; status?: string }) =>
+    api.post<ApiResponse<any>>(`/presensi/${id}/verify`, payload),
+  rekap: (params?: { month: number; year: number }) => api.get<ApiResponse<any[]>>('/presensi/rekap', { params }),
 };
 
 export default api;

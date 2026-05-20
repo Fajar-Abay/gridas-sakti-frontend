@@ -17,6 +17,7 @@ import TopBar from '@/components/layout/TopBar';
 import { isAuthenticated, getUser, setUser as setLocalUser } from '@/lib/auth';
 import { authApi } from '@/lib/api';
 import type { UserRole } from '@/lib/types';
+import { useTahunAjar } from '@/lib/TahunAjarContext';
 
 interface SidebarItem {
   href: string;
@@ -36,6 +37,7 @@ function getSidebarItems(role: UserRole): SidebarItem[] {
         { href: '/admin/kategori-jurnal', label: 'Kategori Jurnal',   icon: <Tag size={18}/> },
         { href: '/admin/periode-pkl',     label: 'Penempatan PKL',    icon: <GraduationCap size={18}/> },
         { href: '/pengajuan-pkl',         label: 'Pengajuan PKL',     icon: <ClipboardList size={18}/> },
+        { href: '/presensi/rekap',        label: 'Rekap Absen',       icon: <BookOpen size={18}/> },
         { href: '/admin/surat',           label: 'Manajemen Surat',   icon: <FileText size={18}/> },
         { href: '/visitasi',              label: 'Visitasi',          icon: <MapPin size={18}/> },
         { href: '/admin/logs',            label: 'Log Aktivitas',     icon: <History size={18}/> },
@@ -44,7 +46,8 @@ function getSidebarItems(role: UserRole): SidebarItem[] {
       return [
         { href: '/dashboard',         label: 'Beranda',     icon: <LayoutDashboard size={18}/> },
         { href: '/monitoring',        label: 'Monitoring',  icon: <Users size={18}/> },
-        { href: '/jurnal-verifikasi', label: 'Verifikasi',  icon: <ClipboardList size={18}/> },
+        { href: '/jurnal-verifikasi', label: 'Verifikasi Jurnal', icon: <ClipboardList size={18}/> },
+        { href: '/presensi/rekap',        label: 'Rekap Absen', icon: <BookOpen size={18}/> },
         { href: '/visitasi',          label: 'Visitasi',    icon: <MapPin size={18}/> },
         { href: '/penilaian',         label: 'Penilaian',   icon: <Award size={18}/> },
         { href: '/profile',           label: 'Profil Saya', icon: <Settings size={18}/> },
@@ -53,13 +56,15 @@ function getSidebarItems(role: UserRole): SidebarItem[] {
       return [
         { href: '/dashboard',         label: 'Beranda',     icon: <LayoutDashboard size={18}/> },
         { href: '/monitoring',        label: 'Monitoring',  icon: <Users size={18}/> },
-        { href: '/jurnal-verifikasi', label: 'Verifikasi',  icon: <ClipboardList size={18}/> },
+        { href: '/jurnal-verifikasi', label: 'Verifikasi Jurnal', icon: <ClipboardList size={18}/> },
+        { href: '/presensi/verifikasi', label: 'Verifikasi Absen', icon: <ClipboardList size={18}/> },
         { href: '/penilaian',         label: 'Penilaian',   icon: <Award size={18}/> },
         { href: '/profile',           label: 'Profil Saya', icon: <Settings size={18}/> },
       ];
     case 'siswa':
       return [
         { href: '/dashboard',        label: 'Beranda',      icon: <LayoutDashboard size={18}/> },
+        { href: '/presensi',         label: 'Presensi Harian', icon: <MapPin size={18}/> },
         { href: '/daftar-industri',  label: 'Daftar Mitra', icon: <Briefcase size={18}/> },
         { href: '/jurnal',           label: 'Jurnal PKL',   icon: <BookOpen size={18}/> },
         { href: '/pengajuan-pkl',    label: 'Pengajuan',    icon: <ClipboardList size={18}/> },
@@ -97,12 +102,14 @@ export default function DashboardLayout() {
   const [ready, setReady] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [user, setUserState] = useState(getUser());
+  const { refresh: refreshTahunAjar } = useTahunAjar();
 
   useEffect(() => {
     if (!isAuthenticated()) {
       navigate('/login', { replace: true });
     } else {
       setReady(true);
+      refreshTahunAjar();
       authApi.me().then(res => {
         const latestUser = res.data.data;
         setLocalUser(latestUser);

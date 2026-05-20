@@ -26,10 +26,19 @@ export default function ProfilePage() {
   const { toast, showToast } = useToast();
   const [activeTab, setActiveTab] = useState<ActiveTab>('info');
 
+  // Safe relation phone number lookup
+  const getRelationNoHp = (u: any) => {
+    if (!u) return '';
+    if (u.role === 'siswa') return u.siswa?.no_hp || '';
+    if (u.role === 'guru') return u.guru?.no_hp || '';
+    if (u.role === 'pembimbing') return u.pembimbing?.no_hp || '';
+    return '';
+  };
+
   // Edit state
   const [editMode, setEditMode] = useState(false);
   const [name, setName] = useState(user?.name || '');
-  const [noHp, setNoHp] = useState(user?.no_hp || '');
+  const [noHp, setNoHp] = useState(user?.no_hp || getRelationNoHp(user));
   const [nis, setNis] = useState(user?.siswa?.nis || '');
   const [nisn, setNisn] = useState(user?.siswa?.nisn || '');
   const [saving, setSaving] = useState(false);
@@ -53,7 +62,7 @@ export default function ProfilePage() {
         setCurrentUser(fullUser);
         setLocalUser(fullUser);
         setName(fullUser.name);
-        setNoHp(fullUser.no_hp || '');
+        setNoHp(fullUser.no_hp || getRelationNoHp(fullUser));
         setNis(fullUser.siswa?.nis || '');
         setNisn(fullUser.siswa?.nisn || '');
 
@@ -114,8 +123,13 @@ export default function ProfilePage() {
       const stored = localStorage.getItem('user');
       if (stored) {
         const u = JSON.parse(stored);
-        u.name = name; u.no_hp = noHp;
+        u.name = name;
+        u.no_hp = noHp;
+        if (u.role === 'siswa' && u.siswa) u.siswa.no_hp = noHp;
+        if (u.role === 'guru' && u.guru) u.guru.no_hp = noHp;
+        if (u.role === 'pembimbing' && u.pembimbing) u.pembimbing.no_hp = noHp;
         localStorage.setItem('user', JSON.stringify(u));
+        setCurrentUser(u);
       }
       setEditMode(false);
     } catch {
@@ -350,7 +364,7 @@ export default function ProfilePage() {
                   ) : (
                     <motion.div key="view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                       <InfoItem icon={<Mail size={16} />} label="Email" value={currentUser?.email || '-'} />
-                      <InfoItem icon={<Phone size={16} />} label="No. HP" value={currentUser?.no_hp || 'Belum diatur'} last />
+                      <InfoItem icon={<Phone size={16} />} label="No. HP" value={currentUser?.no_hp || getRelationNoHp(currentUser) || 'Belum diatur'} last />
                     </motion.div>
                   )}
                 </AnimatePresence>

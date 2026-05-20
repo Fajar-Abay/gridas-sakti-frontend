@@ -25,6 +25,9 @@ import PenilaianPage from './pages/monitoring/PenilaianPage';
 import AdminIndustriPage from './pages/admin/AdminIndustriPage';
 import KategoriJurnalPage from './pages/admin/KategoriJurnalPage';
 import AdminSuratPage from './pages/admin/AdminSuratPage';
+import PresensiPage from './pages/siswa/PresensiPage';
+import VerifikasiPresensiPage from './pages/pembimbing/VerifikasiPresensiPage';
+import RekapPresensiPage from './pages/guru/RekapPresensiPage';
 import { TahunAjarProvider } from './lib/TahunAjarContext';
 
 /**
@@ -78,8 +81,13 @@ function App() {
               
               {/* Siswa Routes */}
               <Route path="/jurnal" element={<JurnalPage />} />
+              <Route path="/presensi" element={<PresensiPage />} />
               <Route path="/daftar-industri" element={<IndustryListPage />} />
               <Route path="/daftar-industri/:id" element={<IndustryDetailPage />} />
+
+              {/* Attendance Verification & Report Routes */}
+              <Route path="/presensi/verifikasi" element={<VerifikasiPresensiPage />} />
+              <Route path="/presensi/rekap" element={<RekapPresensiPage />} />
             </Route>
 
             {/* Redirects */}

@@ -11,7 +11,7 @@ import TopBar from '@/components/layout/TopBar';
 import { SkeletonList } from '@/components/ui/SkeletonCard';
 import { useToast } from '@/components/ui/Toast';
 import { getUser } from '@/lib/auth';
-import { monitoringApi, jurnalApi, pengajuanApi, userApi, dashboardApi } from '@/lib/api';
+import { monitoringApi, jurnalApi, pengajuanApi, userApi, dashboardApi, presensiApi } from '@/lib/api';
 import Badge, {
   getJurnalBadgeVariant, getJurnalStatusLabel,
   getPengajuanBadgeVariant, getPengajuanStatusLabel,
@@ -31,6 +31,7 @@ export default function DashboardPage() {
 
   const [jurnals, setJurnals] = useState<Jurnal[]>([]);
   const [profilBimbingan, setProfilBimbingan] = useState<MonitoringProfil | null>(null);
+  const [todayPresensi, setTodayPresensi] = useState<any>(null);
   const [pengajuan, setPengajuan] = useState<PengajuanPkl[]>([]);
   const [totalUser, setTotalUser] = useState(0);
   const [totalSiswa, setTotalSiswa] = useState(0);
@@ -43,12 +44,17 @@ export default function DashboardPage() {
     setLoading(true);
     try {
       if (user.role === 'siswa') {
-        const [jRes, pRes] = await Promise.allSettled([jurnalApi.list(), monitoringApi.profil()]);
+        const [jRes, pRes, prRes] = await Promise.allSettled([
+          jurnalApi.list(),
+          monitoringApi.profil(),
+          presensiApi.today()
+        ]);
         if (jRes.status === 'fulfilled') {
           const jData = jRes.value.data.data;
           setJurnals(Array.isArray(jData) ? jData.slice(0, 5) : (jData as any).data?.slice(0, 5) || []);
         }
         if (pRes.status === 'fulfilled') setProfilBimbingan(pRes.value.data.data);
+        if (prRes.status === 'fulfilled') setTodayPresensi(prRes.value.data.data?.presensi);
       } else if (user.role === 'guru' || user.role === 'pembimbing') {
         const mRes = await monitoringApi.siswa();
         const mData = mRes.data.data;
@@ -158,6 +164,30 @@ export default function DashboardPage() {
             </div>
             <Link to="/pengajuan-pkl" className="btn btn-sm flex-shrink-0" style={{ background: '#d97706', color: 'white' }}>
               Ajukan
+            </Link>
+          </motion.div>
+        )}
+
+        {/* ── Siswa: Warning Presensi Belum Masuk ── */}
+        {user.role === 'siswa' && !todayPresensi && profilBimbingan?.industri && (
+          <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="card bg-rose-50 border-rose-200 mb-5 flex items-center justify-between gap-4"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center flex-shrink-0">
+                <MapPin size={20}/>
+              </div>
+              <div className="min-w-0">
+                <p className="font-bold text-rose-900 text-sm">Belum Absen Hari Ini</p>
+                <p className="text-xs text-rose-700/80 truncate">
+                  Anda belum mencatat kehadiran untuk hari ini. Silakan absen sekarang.
+                </p>
+              </div>
+            </div>
+            <Link to="/presensi" className="btn btn-sm flex-shrink-0 bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md shadow-rose-100">
+              Absen Masuk
             </Link>
           </motion.div>
         )}
@@ -278,11 +308,11 @@ export default function DashboardPage() {
               <section className="card">
                 <h3 className="font-bold text-slate-800 mb-3 text-sm">⚡ Aksi Cepat</h3>
                 <div className="space-y-2">
-                  <Link to="/jurnal" className="btn btn-primary w-full justify-between">
-                    <span>Tulis Jurnal Harian</span> <ArrowRight size={16}/>
+                  <Link to="/presensi" className="btn btn-primary w-full justify-between bg-gradient-to-r from-indigo-600 to-indigo-700">
+                    <span>Presensi Harian</span> <ArrowRight size={16}/>
                   </Link>
-                  <Link to="/pengajuan-pkl" className="btn btn-secondary w-full justify-between">
-                    <span>Ajukan Tempat PKL</span> <ArrowRight size={16}/>
+                  <Link to="/jurnal" className="btn btn-secondary w-full justify-between">
+                    <span>Tulis Jurnal Harian</span> <ArrowRight size={16}/>
                   </Link>
                   <Link to="/daftar-industri" className="btn btn-secondary w-full justify-between">
                     <span>Daftar Mitra Industri</span> <ArrowRight size={16}/>
@@ -357,6 +387,8 @@ export default function DashboardPage() {
                 <div className="space-y-1">
                   <MenuLink to="/monitoring" icon={<Users size={15}/>} label="Monitoring Siswa"/>
                   <MenuLink to="/jurnal-verifikasi" icon={<ClipboardList size={15}/>} label="Verifikasi Jurnal"/>
+                  {user.role === 'pembimbing' && <MenuLink to="/presensi/verifikasi" icon={<ClipboardList size={15}/>} label="Verifikasi Absen"/>}
+                  {user.role === 'guru' && <MenuLink to="/presensi/rekap" icon={<BookOpen size={15}/>} label="Rekap Absen"/>}
                   <MenuLink to="/penilaian" icon={<Award size={15}/>} label="Penilaian PKL"/>
                   {user.role === 'guru' && <MenuLink to="/visitasi" icon={<MapPin size={15}/>} label="Visitasi"/>}
                 </div>
