@@ -571,8 +571,16 @@ export default function JurnalPage() {
                 <div className="hidden sm:block">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Submission Status</p>
                   <div className="flex items-center gap-2 mt-1">
-                    <div className={`w-2 h-2 rounded-full ${!canSubmit() ? 'bg-amber-500' : 'bg-emerald-500'} animate-pulse`}/>
-                    <p className="text-xs font-bold text-slate-700">{!canSubmit() ? 'OUTSIDE RADIUS' : 'READY TO SUBMIT'}</p>
+                    <div className={`w-2 h-2 rounded-full ${
+                      !canSubmit() ? 'bg-amber-500' : 'bg-emerald-500'
+                    } animate-pulse`}/>
+                    <p className="text-xs font-bold text-slate-700">
+                      {!canSubmit()
+                        ? 'OUTSIDE RADIUS'
+                        : liveCoords
+                        ? 'READY TO SUBMIT'
+                        : 'SIAP (TANPA GPS)'}
+                    </p>
                   </div>
                 </div>
                 

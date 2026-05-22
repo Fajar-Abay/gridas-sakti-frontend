@@ -333,12 +333,18 @@ export default function GPSMap({ lokasiPKL, onPositionUpdate, onStatusChange }: 
             {(gpsStatus === 'error' || gpsStatus === 'denied') && (
               <div className="space-y-1">
                 <p className="text-xs font-semibold text-red-700">{getErrorMessage()}</p>
-                <button 
-                  onClick={simulateLocation}
-                  className="text-[10px] font-bold text-indigo-600 hover:underline flex items-center gap-1"
-                >
-                  <RefreshCw size={10} /> Gunakan Lokasi Simulasi (Dev Mode)
-                </button>
+                <p className="text-[10px] text-emerald-700 font-bold flex items-center gap-1">
+                  <CheckCircle2 size={10} className="flex-shrink-0" />
+                  Jurnal tetap dapat dikirim tanpa GPS
+                </p>
+                {import.meta.env.DEV && (
+                  <button 
+                    onClick={simulateLocation}
+                    className="text-[10px] font-bold text-indigo-600 hover:underline flex items-center gap-1 mt-1"
+                  >
+                    <RefreshCw size={10} /> [Dev] Gunakan Lokasi Simulasi
+                  </button>
+                )}
               </div>
             )}
             {gpsStatus === 'ok' && (

@@ -7,7 +7,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Users, BookOpen, ClipboardList,
-  User, Briefcase, FileText, Award, MapPin
+  User, Briefcase, FileText, MapPin, Calendar
 } from 'lucide-react';
 import { getUser } from '@/lib/auth';
 import type { UserRole } from '@/lib/types';
@@ -33,7 +33,7 @@ function getNavItems(role: UserRole): NavItem[] {
         { href: '/dashboard',         label: 'Beranda',   icon: <LayoutDashboard size={20}/> },
         { href: '/monitoring',        label: 'Monitor',   icon: <Users size={20}/> },
         { href: '/jurnal-verifikasi', label: 'Verifikasi',icon: <ClipboardList size={20}/> },
-        { href: '/penilaian',         label: 'Nilai',     icon: <Award size={20}/> },
+        { href: '/presensi/rekap',    label: 'Absen',     icon: <Calendar size={20}/> },
         { href: '/profile',           label: 'Profil',    icon: <User size={20}/> },
       ];
     case 'pembimbing':
@@ -41,14 +41,14 @@ function getNavItems(role: UserRole): NavItem[] {
         { href: '/dashboard',         label: 'Beranda',   icon: <LayoutDashboard size={20}/> },
         { href: '/monitoring',        label: 'Monitor',   icon: <Users size={20}/> },
         { href: '/jurnal-verifikasi', label: 'Verifikasi',icon: <ClipboardList size={20}/> },
-        { href: '/penilaian',         label: 'Nilai',     icon: <Award size={20}/> },
+        { href: '/presensi/verifikasi', label: 'Absen',    icon: <Calendar size={20}/> },
         { href: '/profile',           label: 'Profil',    icon: <User size={20}/> },
       ];
     case 'admin':
       return [
         { href: '/dashboard',        label: 'Beranda',   icon: <LayoutDashboard size={20}/> },
         { href: '/admin/users',      label: 'Pengguna',  icon: <Users size={20}/> },
-        { href: '/admin/periode-pkl',label: 'PKL',       icon: <Briefcase size={20}/> },
+        { href: '/presensi/rekap',   label: 'Absen',     icon: <Calendar size={20}/> },
         { href: '/pengajuan-pkl',    label: 'Pengajuan', icon: <ClipboardList size={20}/> },
         { href: '/admin/surat',      label: 'Surat',     icon: <FileText size={20}/> },
       ];

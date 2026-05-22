@@ -176,8 +176,8 @@ export default function PresensiPage() {
     setSubmitting(true);
     try {
       await presensiApi.submitPulang({
-        latitude: coords?.latitude,
-        longitude: coords?.longitude,
+        latitude: coords?.latitude ?? null,
+        longitude: coords?.longitude ?? null,
       });
       showToast('Presensi pulang berhasil dicatat!', 'success');
       fetchTodayStatus();
@@ -297,9 +297,20 @@ export default function PresensiPage() {
                         )}
 
                         {geoError && (
-                          <div className="flex items-start gap-2 text-red-600">
-                            <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" />
-                            <p className="text-xs font-semibold leading-relaxed">{geoError}</p>
+                          <div className="space-y-2">
+                            <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-100 rounded-xl">
+                              <AlertTriangle size={14} className="flex-shrink-0 mt-0.5 text-amber-500" />
+                              <div>
+                                <p className="text-xs font-bold text-amber-800 leading-snug">GPS tidak terdeteksi</p>
+                                <p className="text-[11px] text-amber-700 mt-0.5 leading-relaxed">{geoError}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-2 p-3 bg-emerald-50 border border-emerald-100 rounded-xl">
+                              <CheckCircle size={14} className="flex-shrink-0 mt-0.5 text-emerald-600" />
+                              <p className="text-xs font-semibold text-emerald-800 leading-snug">
+                                Anda <strong>tetap bisa melakukan presensi</strong> tanpa GPS. Sistem akan mencatat kehadiran Anda dan memberi keterangan <em>"Masuk tanpa GPS terdeteksi"</em>.
+                              </p>
+                            </div>
                           </div>
                         )}
 
@@ -416,11 +427,20 @@ export default function PresensiPage() {
                             </button>
                           </div>
 
+                        {/* Validasi GPS Pulang */}
                           {coords && distance !== null && (
                             <div className={`p-2 rounded text-xs font-semibold mt-2
                               ${distance <= 100 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}
                             >
                               Jarak: {Math.round(distance)} meter dari Instansi.
+                            </div>
+                          )}
+                          {!coords && !geoLoading && (
+                            <div className="mt-2 flex items-start gap-2 p-2.5 bg-amber-50 border border-amber-100 rounded-lg">
+                              <AlertTriangle size={13} className="flex-shrink-0 mt-0.5 text-amber-500" />
+                              <p className="text-[11px] text-amber-800 font-semibold leading-snug">
+                                GPS tidak terdeteksi. Anda <strong>tetap bisa melakukan presensi pulang</strong> — sistem akan mencatat tanpa koordinat lokasi.
+                              </p>
                             </div>
                           )}
                         </div>

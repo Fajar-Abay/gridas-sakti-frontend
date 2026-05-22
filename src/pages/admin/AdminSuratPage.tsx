@@ -48,11 +48,12 @@ export default function AdminSuratPage() {
     try {
       const res = await suratApi.listTemplates();
       // Data struktur baru { templates: [], archives: [] }
-      if (res.data.data.templates) {
-        setTemplates(res.data.data.templates);
-        setArchives(res.data.data.archives || []);
+      const data = res.data.data as any;
+      if (data && data.templates) {
+        setTemplates(data.templates);
+        setArchives(data.archives || []);
       } else {
-        setTemplates(res.data.data as any);
+        setTemplates(data || []);
       }
     } catch {
       showToast('Gagal memuat data surat.', 'error');

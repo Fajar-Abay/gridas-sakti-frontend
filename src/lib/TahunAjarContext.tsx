@@ -33,13 +33,14 @@ export const TahunAjarProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         
         // Cek jika ada yang aktif di local storage
         const savedId = localStorage.getItem('active_tahun_ajaran_id');
+        const isUserSelected = sessionStorage.getItem('active_tahun_ajaran_user_selected') === 'true';
         let active = null;
         
-        if (savedId) {
+        if (savedId && isUserSelected) {
           active = data.find(t => t.id === parseInt(savedId));
         }
         
-        // Jika tidak ada di local storage atau tidak ditemukan, ambil yang is_active: true dari API
+        // Jika tidak ada di local storage / session atau tidak ditemukan, ambil yang is_active: true dari API
         if (!active) {
           active = data.find(t => t.is_active);
         }
@@ -72,6 +73,7 @@ export const TahunAjarProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const setActiveTahunAjar = (tahun: TahunAjar) => {
     setActiveTahunAjarState(tahun);
     localStorage.setItem('active_tahun_ajaran_id', tahun.id.toString());
+    sessionStorage.setItem('active_tahun_ajaran_user_selected', 'true');
   };
 
   return (

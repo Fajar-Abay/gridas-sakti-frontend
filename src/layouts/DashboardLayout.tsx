@@ -10,10 +10,9 @@ import {
   LayoutDashboard, Users, BookOpen, ClipboardList,
   Settings, Zap, Briefcase, History,
   Database, Tag, Award, FileText, MapPin,
-  ChevronLeft, ChevronRight, Bell, GraduationCap,
+  ChevronLeft, ChevronRight, GraduationCap, Calendar,
 } from 'lucide-react';
 import BottomNav from '@/components/layout/BottomNav';
-import TopBar from '@/components/layout/TopBar';
 import { isAuthenticated, getUser, setUser as setLocalUser } from '@/lib/auth';
 import { authApi } from '@/lib/api';
 import type { UserRole } from '@/lib/types';
@@ -26,49 +25,134 @@ interface SidebarItem {
   badge?: number;
 }
 
-function getSidebarItems(role: UserRole): SidebarItem[] {
+interface SidebarGroup {
+  title: string;
+  items: SidebarItem[];
+}
+
+function getSidebarGroups(role: UserRole): SidebarGroup[] {
   switch (role) {
     case 'admin':
       return [
-        { href: '/dashboard',             label: 'Dashboard',         icon: <LayoutDashboard size={18}/> },
-        { href: '/admin/users',           label: 'Kelola Pengguna',   icon: <Users size={18}/> },
-        { href: '/admin/master-data',     label: 'Data Master',       icon: <Database size={18}/> },
-        { href: '/admin/industri',        label: 'Master Industri',   icon: <Briefcase size={18}/> },
-        { href: '/admin/kategori-jurnal', label: 'Kategori Jurnal',   icon: <Tag size={18}/> },
-        { href: '/admin/periode-pkl',     label: 'Penempatan PKL',    icon: <GraduationCap size={18}/> },
-        { href: '/pengajuan-pkl',         label: 'Pengajuan PKL',     icon: <ClipboardList size={18}/> },
-        { href: '/presensi/rekap',        label: 'Rekap Absen',       icon: <BookOpen size={18}/> },
-        { href: '/admin/surat',           label: 'Manajemen Surat',   icon: <FileText size={18}/> },
-        { href: '/visitasi',              label: 'Visitasi',          icon: <MapPin size={18}/> },
-        { href: '/admin/logs',            label: 'Log Aktivitas',     icon: <History size={18}/> },
+        {
+          title: 'Navigasi Utama',
+          items: [
+            { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18}/> },
+          ]
+        },
+        {
+          title: 'Data Master',
+          items: [
+            { href: '/admin/users',           label: 'Kelola Pengguna',   icon: <Users size={18}/> },
+            { href: '/admin/master-data',     label: 'Data Master',       icon: <Database size={18}/> },
+            { href: '/admin/industri',        label: 'Master Industri',   icon: <Briefcase size={18}/> },
+            { href: '/admin/kategori-jurnal', label: 'Kategori Jurnal',   icon: <Tag size={18}/> },
+          ]
+        },
+        {
+          title: 'Operasional PKL',
+          items: [
+            { href: '/admin/periode-pkl',     label: 'Penempatan PKL',    icon: <GraduationCap size={18}/> },
+            { href: '/pengajuan-pkl',         label: 'Pengajuan PKL',     icon: <ClipboardList size={18}/> },
+            { href: '/presensi/rekap',        label: 'Rekap Absen',       icon: <Calendar size={18}/> },
+            { href: '/admin/surat',           label: 'Manajemen Surat',   icon: <FileText size={18}/> },
+            { href: '/visitasi',              label: 'Visitasi',          icon: <MapPin size={18}/> },
+          ]
+        },
+        {
+          title: 'Sistem',
+          items: [
+            { href: '/admin/logs',            label: 'Log Aktivitas',     icon: <History size={18}/> },
+          ]
+        }
       ];
     case 'guru':
       return [
-        { href: '/dashboard',         label: 'Beranda',     icon: <LayoutDashboard size={18}/> },
-        { href: '/monitoring',        label: 'Monitoring',  icon: <Users size={18}/> },
-        { href: '/jurnal-verifikasi', label: 'Verifikasi Jurnal', icon: <ClipboardList size={18}/> },
-        { href: '/presensi/rekap',        label: 'Rekap Absen', icon: <BookOpen size={18}/> },
-        { href: '/visitasi',          label: 'Visitasi',    icon: <MapPin size={18}/> },
-        { href: '/penilaian',         label: 'Penilaian',   icon: <Award size={18}/> },
-        { href: '/profile',           label: 'Profil Saya', icon: <Settings size={18}/> },
+        {
+          title: 'Navigasi Utama',
+          items: [
+            { href: '/dashboard',         label: 'Beranda',     icon: <LayoutDashboard size={18}/> },
+          ]
+        },
+        {
+          title: 'Bimbingan',
+          items: [
+            { href: '/monitoring',        label: 'Monitoring',  icon: <Users size={18}/> },
+            { href: '/jurnal-verifikasi', label: 'Verifikasi Jurnal', icon: <ClipboardList size={18}/> },
+            { href: '/presensi/rekap',    label: 'Rekap Absen', icon: <Calendar size={18}/> },
+          ]
+        },
+        {
+          title: 'Penilaian & Visit',
+          items: [
+            { href: '/visitasi',          label: 'Visitasi',    icon: <MapPin size={18}/> },
+            { href: '/penilaian',         label: 'Penilaian',   icon: <Award size={18}/> },
+          ]
+        },
+        {
+          title: 'Pengaturan',
+          items: [
+            { href: '/profile',           label: 'Profil Saya', icon: <Settings size={18}/> },
+          ]
+        }
       ];
     case 'pembimbing':
       return [
-        { href: '/dashboard',         label: 'Beranda',     icon: <LayoutDashboard size={18}/> },
-        { href: '/monitoring',        label: 'Monitoring',  icon: <Users size={18}/> },
-        { href: '/jurnal-verifikasi', label: 'Verifikasi Jurnal', icon: <ClipboardList size={18}/> },
-        { href: '/presensi/verifikasi', label: 'Verifikasi Absen', icon: <ClipboardList size={18}/> },
-        { href: '/penilaian',         label: 'Penilaian',   icon: <Award size={18}/> },
-        { href: '/profile',           label: 'Profil Saya', icon: <Settings size={18}/> },
+        {
+          title: 'Navigasi Utama',
+          items: [
+            { href: '/dashboard',         label: 'Beranda',     icon: <LayoutDashboard size={18}/> },
+          ]
+        },
+        {
+          title: 'Bimbingan',
+          items: [
+            { href: '/monitoring',        label: 'Monitoring',  icon: <Users size={18}/> },
+            { href: '/jurnal-verifikasi', label: 'Verifikasi Jurnal', icon: <ClipboardList size={18}/> },
+            { href: '/presensi/verifikasi', label: 'Verifikasi Absen', icon: <Calendar size={18}/> },
+          ]
+        },
+        {
+          title: 'Penilaian',
+          items: [
+            { href: '/penilaian',         label: 'Penilaian',   icon: <Award size={18}/> },
+          ]
+        },
+        {
+          title: 'Pengaturan',
+          items: [
+            { href: '/profile',           label: 'Profil Saya', icon: <Settings size={18}/> },
+          ]
+        }
       ];
     case 'siswa':
       return [
-        { href: '/dashboard',        label: 'Beranda',      icon: <LayoutDashboard size={18}/> },
-        { href: '/presensi',         label: 'Presensi Harian', icon: <MapPin size={18}/> },
-        { href: '/daftar-industri',  label: 'Daftar Mitra', icon: <Briefcase size={18}/> },
-        { href: '/jurnal',           label: 'Jurnal PKL',   icon: <BookOpen size={18}/> },
-        { href: '/pengajuan-pkl',    label: 'Pengajuan',    icon: <ClipboardList size={18}/> },
-        { href: '/profile',          label: 'Profil Saya',  icon: <Settings size={18}/> },
+        {
+          title: 'Navigasi Utama',
+          items: [
+            { href: '/dashboard',        label: 'Beranda',      icon: <LayoutDashboard size={18}/> },
+          ]
+        },
+        {
+          title: 'Kegiatan PKL',
+          items: [
+            { href: '/presensi',         label: 'Presensi Harian', icon: <MapPin size={18}/> },
+            { href: '/jurnal',           label: 'Jurnal PKL',   icon: <BookOpen size={18}/> },
+          ]
+        },
+        {
+          title: 'Informasi',
+          items: [
+            { href: '/daftar-industri',  label: 'Daftar Mitra', icon: <Briefcase size={18}/> },
+            { href: '/pengajuan-pkl',    label: 'Pengajuan',    icon: <ClipboardList size={18}/> },
+          ]
+        },
+        {
+          title: 'Pengaturan',
+          items: [
+            { href: '/profile',          label: 'Profil Saya',  icon: <Settings size={18}/> },
+          ]
+        }
       ];
     default:
       return [];
@@ -120,7 +204,7 @@ export default function DashboardLayout() {
 
   if (!ready) return null;
 
-  const items = user ? getSidebarItems(user.role) : [];
+  const groups = user ? getSidebarGroups(user.role) : [];
   const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api/v1', '') ?? 'http://localhost:8000';
   const fotoUrl = user?.siswa?.foto ? `${BASE_URL}/storage/${user.siswa.foto}` : null;
 
@@ -147,28 +231,39 @@ export default function DashboardLayout() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto scrollbar-hide">
-          {items.map((item) => {
-            const isActive = item.href === '/dashboard'
-              ? pathname === '/dashboard'
-              : pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                to={item.href}
-                title={!isSidebarOpen ? item.label : ''}
-                className={`sidebar-link ${isActive ? 'active' : ''} ${!isSidebarOpen ? 'justify-center px-0' : ''}`}
-              >
-                <span className={`flex-shrink-0 ${isActive ? 'text-indigo-400' : 'text-white/40'}`}>
-                  {item.icon}
-                </span>
-                {isSidebarOpen && <span className="truncate">{item.label}</span>}
-                {isSidebarOpen && isActive && (
-                  <motion.div layoutId="active-pill" className="ml-auto w-1.5 h-5 bg-indigo-400 rounded-full" />
-                )}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 px-2 py-4 space-y-4 overflow-y-auto scrollbar-hide">
+          {groups.map((group) => (
+            <div key={group.title} className="space-y-0.5">
+              {isSidebarOpen ? (
+                <p className="px-3 text-[10px] font-extrabold text-white/25 uppercase tracking-widest mb-1.5 mt-3 select-none">
+                  {group.title}
+                </p>
+              ) : (
+                <div className="h-px bg-white/5 my-3 mx-2" />
+              )}
+              {group.items.map((item) => {
+                const isActive = item.href === '/dashboard'
+                  ? pathname === '/dashboard'
+                  : pathname.startsWith(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    title={!isSidebarOpen ? item.label : ''}
+                    className={`sidebar-link ${isActive ? 'active' : ''} ${!isSidebarOpen ? 'justify-center px-0' : ''}`}
+                  >
+                    <span className={`flex-shrink-0 ${isActive ? 'text-indigo-400' : 'text-white/40'}`}>
+                      {item.icon}
+                    </span>
+                    {isSidebarOpen && <span className="truncate">{item.label}</span>}
+                    {isSidebarOpen && isActive && (
+                      <motion.div layoutId="active-pill" className="ml-auto w-1.5 h-5 bg-indigo-400 rounded-full" />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
 
         {/* User Info */}

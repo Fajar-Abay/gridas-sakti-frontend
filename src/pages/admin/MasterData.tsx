@@ -13,10 +13,12 @@ import { SkeletonList } from '@/components/ui/SkeletonCard';
 import Badge from '@/components/ui/Badge';
 import { BookOpen, GraduationCap, Calendar, Building2, Plus, Search, Trash2, Pencil, X, Save, AlertTriangle, CheckCircle, RotateCcw, Power } from 'lucide-react';
 import SearchableSelect from '@/components/ui/SearchableSelect';
+import { useTahunAjar } from '@/lib/TahunAjarContext';
 
 type Tab = 'jurusan' | 'kelas' | 'tahun-ajar' | 'industri';
 
 export default function MasterData() {
+  const { setActiveTahunAjar, refresh: refreshTahunAjar } = useTahunAjar();
   const [activeTab, setActiveTab] = useState<Tab>('jurusan');
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any[]>([]);
@@ -122,6 +124,11 @@ export default function MasterData() {
 
       showToast(`Data berhasil ${editItem ? 'diperbarui' : 'ditambahkan'}.`, 'success');
       closeModal();
+      
+      if (activeTab === 'tahun-ajar') {
+        await refreshTahunAjar();
+      }
+      
       fetchData(activeTab);
     } catch (err) {
       showToast('Terjadi kesalahan saat menyimpan data.', 'error');
@@ -137,16 +144,27 @@ export default function MasterData() {
       else if (activeTab === 'industri') await industriApi.delete(id);
 
       showToast('Data berhasil dihapus.', 'success');
+      
+      if (activeTab === 'tahun-ajar') {
+        await refreshTahunAjar();
+      }
+
       fetchData(activeTab);
     } catch (err) {
       showToast('Gagal menghapus data.', 'error');
     }
   };
 
-  const handleActivate = async (id: number) => {
+  const handleActivate = async (item: any) => {
     try {
-      await tahunAjarApi.setActive(id);
+      await tahunAjarApi.setActive(item.id);
       showToast('Tahun ajaran berhasil diaktifkan.', 'success');
+      
+      // Sinkronisasi dengan context dan local storage
+      setActiveTahunAjar(item);
+      sessionStorage.removeItem('active_tahun_ajaran_user_selected');
+      
+      await refreshTahunAjar();
       fetchData(activeTab);
     } catch (err) {
       showToast('Gagal mengaktifkan tahun ajaran.', 'error');
@@ -261,7 +279,7 @@ export default function MasterData() {
                       <Trash2 size={15} />
                     </button>
                     {activeTab === 'tahun-ajar' && !item.is_active && (
-                      <button onClick={() => handleActivate(item.id)} className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" title="Set Aktif">
+                      <button onClick={() => handleActivate(item)} className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" title="Set Aktif">
                         <CheckCircle size={18} />
                       </button>
                     )}

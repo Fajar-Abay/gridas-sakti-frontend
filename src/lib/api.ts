@@ -509,7 +509,7 @@ export const presensiApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
-  submitPulang: (payload: { latitude: number; longitude: number }) =>
+  submitPulang: (payload: { latitude?: number | null; longitude?: number | null }) =>
     api.post<ApiResponse<any>>('/presensi/pulang', payload),
   riwayat: () => api.get<ApiResponse<any[]>>('/presensi/riwayat'),
   siswa: (params?: { date?: string; start_date?: string; end_date?: string }) => api.get<ApiResponse<any[]>>('/presensi/siswa', { params }),
