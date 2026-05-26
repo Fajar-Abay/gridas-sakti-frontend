@@ -27,6 +27,12 @@ export default function VisitasiPage() {
   const [search, setSearch] = useState('');
   const { toast, showToast } = useToast();
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [lastPage, setLastPage] = useState(1);
+  const [totalData, setTotalData] = useState(0);
+  const [perPage] = useState(10);
+
   // Form State
   const [editItem, setEditItem] = useState<Visitasi | null>(null);
   const [industris, setIndustris] = useState<Industri[]>([]);
@@ -40,18 +46,25 @@ export default function VisitasiPage() {
   const [fotoFile, setFotoFile] = useState<File | null>(null);
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
 
-  const fetchVisitasis = useCallback(async () => {
+  const fetchVisitasis = useCallback(async (page = 1) => {
     setLoading(true);
     try {
-      const res = await visitasiApi.list();
-      const rawData = res.data.data;
-      setVisitasis(Array.isArray(rawData) ? rawData : (rawData as any).data || []);
+      const res = await visitasiApi.list({
+        page,
+        per_page: perPage,
+        search: search
+      });
+      const paginatedData = res.data.data as any;
+      setVisitasis(paginatedData.data || []);
+      setCurrentPage(paginatedData.current_page || 1);
+      setLastPage(paginatedData.last_page || 1);
+      setTotalData(paginatedData.total || 0);
     } catch (err) {
       showToast('Gagal memuat data visitasi.', 'error');
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, [showToast, perPage, search]);
 
   const fetchIndustris = useCallback(async () => {
     try {
@@ -76,10 +89,16 @@ export default function VisitasiPage() {
   }, [currentUser]);
 
   useEffect(() => {
-    fetchVisitasis();
+    const timer = setTimeout(() => {
+      fetchVisitasis(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
     fetchIndustris();
     fetchGurus();
-  }, [fetchVisitasis, fetchIndustris, fetchGurus]);
+  }, [fetchIndustris, fetchGurus]);
 
   const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -150,7 +169,7 @@ export default function VisitasiPage() {
         showToast('Visitasi berhasil dicatat.', 'success');
       }
       resetForm();
-      fetchVisitasis();
+      fetchVisitasis(currentPage);
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Gagal menyimpan visitasi.', 'error');
     } finally {
@@ -163,17 +182,13 @@ export default function VisitasiPage() {
     try {
       await visitasiApi.delete(id);
       showToast('Data visitasi telah dihapus.', 'success');
-      fetchVisitasis();
+      fetchVisitasis(currentPage);
     } catch {
       showToast('Gagal menghapus data.', 'error');
     }
   };
 
-  const filteredVisitasis = visitasis.filter(v => 
-    v.industri?.nama_industri.toLowerCase().includes(search.toLowerCase()) ||
-    v.guru?.name.toLowerCase().includes(search.toLowerCase()) ||
-    v.catatan.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredVisitasis = visitasis;
 
   return (
     <div className="min-h-screen bg-slate-50/50">
@@ -271,6 +286,33 @@ export default function VisitasiPage() {
                 <p className="text-slate-400 font-medium max-w-sm mx-auto">Mulai catat hasil kunjungan monitoring Anda ke lokasi PKL siswa.</p>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {!loading && lastPage > 1 && (
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm animate-fade-in">
+            <p className="text-xs font-bold text-slate-400">
+              Hal <span className="text-slate-800">{currentPage}</span> / <span className="text-slate-800">{lastPage}</span> 
+              <span className="mx-2">•</span> 
+              Total <span className="text-indigo-600">{totalData}</span> Kunjungan
+            </p>
+            <div className="flex gap-2">
+              <button 
+                disabled={currentPage === 1}
+                onClick={() => fetchVisitasis(currentPage - 1)}
+                className="btn btn-secondary btn-sm px-3 disabled:opacity-50"
+              >
+                Sebelumnya
+              </button>
+              <button 
+                disabled={currentPage === lastPage}
+                onClick={() => fetchVisitasis(currentPage + 1)}
+                className="btn btn-primary btn-sm px-3 disabled:opacity-50"
+              >
+                Selanjutnya
+              </button>
+            </div>
           </div>
         )}
       </div>

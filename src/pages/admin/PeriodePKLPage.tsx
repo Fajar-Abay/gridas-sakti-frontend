@@ -37,33 +37,39 @@ export default function PeriodePKLPage() {
   const [editItem, setEditItem] = useState<PeriodePkl | null>(null);
   const [formData, setFormData] = useState<any>({ status: 'active' });
   
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [lastPage, setLastPage] = useState(1);
+  const [totalData, setTotalData] = useState(0);
+  const [perPage] = useState(15);
+
   // Bulk State
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [bulkData, setBulkData] = useState<any>({});
   const [submittingBulk, setSubmittingBulk] = useState(false);
 
-  const fetchPeriodes = useCallback(async () => {
+  const fetchPeriodes = useCallback(async (page = 1) => {
     setLoading(true);
     try {
-      const res = await periodePklApi.list();
+      const res = await periodePklApi.list({
+        page,
+        per_page: perPage,
+        search: searchQuery,
+        industri_id: filterIndustriId || undefined
+      });
 
-      const rawData = res.data.data as any;
-      
-      let items = [];
-      if (Array.isArray(rawData)) {
-        items = rawData;
-      } else if (rawData && Array.isArray(rawData.data)) {
-        items = rawData.data;
-      }
-      
-      setPeriodes(items);
+      const paginatedData = res.data.data as any;
+      setPeriodes(paginatedData.data || []);
+      setCurrentPage(paginatedData.current_page || 1);
+      setLastPage(paginatedData.last_page || 1);
+      setTotalData(paginatedData.total || 0);
     } catch (err) {
       showToast('Gagal memuat data penempatan.', 'error');
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, [showToast, perPage, searchQuery, filterIndustriId]);
 
   const fetchReferenceData = useCallback(async () => {
     try {
@@ -84,9 +90,15 @@ export default function PeriodePKLPage() {
   }, []);
 
   useEffect(() => {
-    fetchPeriodes();
+    const timer = setTimeout(() => {
+      fetchPeriodes(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery, filterIndustriId]);
+
+  useEffect(() => {
     fetchReferenceData();
-  }, [fetchPeriodes, fetchReferenceData]);
+  }, [fetchReferenceData]);
 
   const openModal = (item: PeriodePkl | null = null) => {
     setEditItem(item);
@@ -145,7 +157,7 @@ export default function PeriodePKLPage() {
         showToast('Penempatan berhasil dibuat.', 'success');
       }
       closeModal();
-      fetchPeriodes();
+      fetchPeriodes(currentPage);
     } catch (err: any) {
       if (err?.response?.data?.errors) {
         const errors = err.response.data.errors;
@@ -171,16 +183,7 @@ export default function PeriodePKLPage() {
     }
   };
 
-  const filteredPeriodes = periodes.filter(p => {
-    const searchLower = searchQuery.trim().toLowerCase();
-    const matchesSearch = !searchLower || 
-      (p.siswa?.user?.name || '').toLowerCase().includes(searchLower) ||
-      (p.industri?.nama_industri || '').toLowerCase().includes(searchLower) ||
-      (p.siswa?.nisn || '').toLowerCase().includes(searchLower);
-      
-    const matchesIndustri = !filterIndustriId || p.industri_id?.toString() === filterIndustriId;
-    return matchesSearch && matchesIndustri;
-  });
+  const filteredPeriodes = periodes;
 
   const handleBulkSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -192,7 +195,7 @@ export default function PeriodePKLPage() {
       setIsBulkModalOpen(false);
       setSelectedIds([]);
       setBulkData({});
-      fetchPeriodes();
+      fetchPeriodes(currentPage);
     } catch (err) {
       showToast('Gagal memperbarui data secara massal.', 'error');
     } finally {
@@ -205,7 +208,7 @@ export default function PeriodePKLPage() {
     try {
       await periodePklApi.delete(id);
       showToast('Penempatan dihapus.', 'success');
-      fetchPeriodes();
+      fetchPeriodes(currentPage);
     } catch (err) {
       showToast('Gagal menghapus data.', 'error');
     }
@@ -402,6 +405,33 @@ export default function PeriodePKLPage() {
                 <p className="text-slate-400 font-medium">Belum ada data penempatan siswa.</p>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {!loading && lastPage > 1 && (
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm animate-fade-in">
+            <p className="text-xs font-bold text-slate-400">
+              Halaman <span className="text-slate-800">{currentPage}</span> dari <span className="text-slate-800">{lastPage}</span> 
+              <span className="mx-2">•</span> 
+              Total <span className="text-indigo-600">{totalData}</span> Penempatan
+            </p>
+            <div className="flex gap-2">
+              <button 
+                disabled={currentPage === 1}
+                onClick={() => fetchPeriodes(currentPage - 1)}
+                className="btn btn-secondary btn-sm px-4 disabled:opacity-50"
+              >
+                Sebelumnya
+              </button>
+              <button 
+                disabled={currentPage === lastPage}
+                onClick={() => fetchPeriodes(currentPage + 1)}
+                className="btn btn-primary btn-sm px-4 disabled:opacity-50"
+              >
+                Selanjutnya
+              </button>
+            </div>
           </div>
         )}
       </div>

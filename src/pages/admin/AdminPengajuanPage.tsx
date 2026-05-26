@@ -21,6 +21,20 @@ export default function AdminPengajuanPage() {
   const [filterIndustri, setFilterIndustri] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [lastPage, setLastPage] = useState(1);
+  const [totalData, setTotalData] = useState(0);
+  const [perPage] = useState(15);
+  
+  // Stats state
+  const [stats, setStats] = useState({
+    pending: 0,
+    approved: 0,
+    on_site: 0,
+    total: 0
+  });
+
   // Selection state
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   
@@ -58,37 +72,61 @@ export default function AdminPengajuanPage() {
 
   const { toast, showToast } = useToast();
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (page = 1) => {
     setLoading(true);
     try {
       const [resP, resI] = await Promise.all([
-        pengajuanApi.listAll(),
+        pengajuanApi.listAll({
+          page,
+          per_page: perPage,
+          search: search,
+          industri_id: filterIndustri !== 'all' ? filterIndustri : undefined,
+          status: filterStatus !== 'all' ? filterStatus : undefined
+        }),
         industriApi.list()
       ]);
-      const dataP = resP.data.data;
+      const paginatedData = resP.data.data as any;
       const dataI = resI.data.data;
-      setPengajuans(Array.isArray(dataP) ? dataP : (dataP as any).data || []);
+      setPengajuans(paginatedData.data || []);
+      setCurrentPage(paginatedData.current_page || 1);
+      setLastPage(paginatedData.last_page || 1);
+      setTotalData(paginatedData.total || 0);
       setIndustris(Array.isArray(dataI) ? dataI : (dataI as any).data || []);
     } catch {
       showToast('Gagal memuat data pengajuan.', 'error');
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, [showToast, perPage, search, filterIndustri, filterStatus]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  const fetchStats = useCallback(async () => {
+    try {
+      const res = await pengajuanApi.listAll({ per_page: 10000 });
+      const raw = res.data.data;
+      const allList = ((Array.isArray(raw) ? raw : (raw as any).data || []) as PengajuanPkl[]);
+      setStats({
+        pending: allList.filter(p => p.status === 'pending').length,
+        approved: allList.filter(p => p.status === 'approved').length,
+        on_site: allList.filter(p => p.status === 'on_site').length,
+        total: allList.length
+      });
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('Failed to fetch stats:', err);
+    }
+  }, []);
 
-  // Filtering logic
-  const filtered = useMemo(() => {
-    if (!Array.isArray(pengajuans)) return [];
-    return pengajuans.filter(p => {
-      const matchSearch = p.siswa?.user?.name.toLowerCase().includes(search.toLowerCase()) || 
-                          p.industri?.nama_industri.toLowerCase().includes(search.toLowerCase());
-      const matchIndustri = filterIndustri === 'all' || p.industri_id.toString() === filterIndustri;
-      const matchStatus = filterStatus === 'all' || p.status === filterStatus;
-      return matchSearch && matchIndustri && matchStatus;
-    });
-  }, [pengajuans, search, filterIndustri, filterStatus]);
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchData(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search, filterIndustri, filterStatus]);
+
+  const filtered = pengajuans;
 
   // Selection helpers
   const toggleSelect = (id: number) => {
@@ -123,7 +161,8 @@ export default function AdminPengajuanPage() {
         showToast('Pengajuan berhasil disetujui.', 'success');
       }
       setIsApproveModalOpen(false);
-      fetchData();
+      fetchData(currentPage);
+      fetchStats();
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Gagal menyetujui pengajuan.', 'error');
     }
@@ -149,7 +188,8 @@ export default function AdminPengajuanPage() {
       showToast('Tanggal periode PKL berhasil diperbarui.', 'success');
       setIsEditDateModalOpen(false);
       setEditingPengajuan(null);
-      fetchData();
+      fetchData(currentPage);
+      fetchStats();
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Gagal memperbarui tanggal PKL.', 'error');
     }
@@ -160,7 +200,8 @@ export default function AdminPengajuanPage() {
     try {
       await pengajuanApi.cancelPlacement(id);
       showToast('Penempatan berhasil dibatalkan.', 'success');
-      fetchData();
+      fetchData(currentPage);
+      fetchStats();
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Gagal membatalkan penempatan.', 'error');
     }
@@ -188,7 +229,8 @@ export default function AdminPengajuanPage() {
         showToast('Pengajuan ditolak.', 'success');
       }
       setIsRejectModalOpen(false);
-      fetchData();
+      fetchData(currentPage);
+      fetchStats();
     } catch {
       showToast('Gagal menolak pengajuan.', 'error');
     }
@@ -248,10 +290,10 @@ export default function AdminPengajuanPage() {
       <div className="page-container py-6">
         {/* Stats Row */}
         <div className="grid grid-cols-4 gap-3 mb-5">
-          <StatCard label="Pending" count={pengajuans.filter(p=>p.status==='pending').length} color="text-amber-600 bg-amber-50" icon={<Clock size={16}/>} />
-          <StatCard label="Setuju" count={pengajuans.filter(p=>p.status==='approved').length} color="text-emerald-600 bg-emerald-50" icon={<CheckCircle2 size={16}/>} />
-          <StatCard label="On Site" count={pengajuans.filter(p=>p.status==='on_site').length} color="text-indigo-600 bg-indigo-50" icon={<Building2 size={16}/>} />
-          <StatCard label="Total" count={pengajuans.length} color="text-slate-600 bg-slate-100" icon={<Users size={16}/>} />
+          <StatCard label="Pending" count={stats.pending} color="text-amber-600 bg-amber-50" icon={<Clock size={16}/>} />
+          <StatCard label="Setuju" count={stats.approved} color="text-emerald-600 bg-emerald-50" icon={<CheckCircle2 size={16}/>} />
+          <StatCard label="On Site" count={stats.on_site} color="text-indigo-600 bg-indigo-50" icon={<Building2 size={16}/>} />
+          <StatCard label="Total" count={stats.total} color="text-slate-600 bg-slate-100" icon={<Users size={16}/>} />
         </div>
 
         {/* Toolbar */}
@@ -413,6 +455,33 @@ export default function AdminPengajuanPage() {
                 <p className="text-slate-400 font-medium">Tidak ada data ditemukan.</p>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {!loading && lastPage > 1 && (
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+            <p className="text-xs font-bold text-slate-400">
+              Hal <span className="text-slate-800">{currentPage}</span> / <span className="text-slate-800">{lastPage}</span> 
+              <span className="mx-2">•</span> 
+              Total <span className="text-indigo-600">{totalData}</span>
+            </p>
+            <div className="flex gap-2">
+              <button 
+                disabled={currentPage === 1}
+                onClick={() => fetchData(currentPage - 1)}
+                className="btn btn-secondary btn-sm px-3 disabled:opacity-50"
+              >
+                Sebelumnya
+              </button>
+              <button 
+                disabled={currentPage === lastPage}
+                onClick={() => fetchData(currentPage + 1)}
+                className="btn btn-primary btn-sm px-3 disabled:opacity-50"
+              >
+                Selanjutnya
+              </button>
+            </div>
           </div>
         )}
       </div>

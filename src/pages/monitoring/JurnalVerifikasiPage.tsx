@@ -29,29 +29,72 @@ export default function JurnalVerifikasiPage() {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const { toast, showToast } = useToast();
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [lastPage, setLastPage] = useState(1);
+  const [totalData, setTotalData] = useState(0);
+  const [perPage] = useState(15);
+
+  // Stats state
+  const [stats, setStats] = useState({
+    all: 0,
+    pending: 0,
+    verified: 0,
+    revision: 0
+  });
+
   const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api/v1', '') ?? 'http://localhost:8000';
 
-  const fetchJurnals = useCallback(async () => {
+  const fetchJurnals = useCallback(async (page = 1) => {
     setLoading(true);
     try {
-      const res = await jurnalApi.list();
-      const rawData = res.data.data;
-      setJurnals(Array.isArray(rawData) ? rawData : (rawData as any).data || []);
+      const res = await jurnalApi.list({
+        page,
+        per_page: perPage,
+        status: filterStatus !== 'all' ? filterStatus : undefined
+      });
+      const paginatedData = res.data.data as any;
+      setJurnals(paginatedData.data || []);
+      setCurrentPage(paginatedData.current_page || 1);
+      setLastPage(paginatedData.last_page || 1);
+      setTotalData(paginatedData.total || 0);
     } catch {
       showToast('Gagal memuat data jurnal.', 'error');
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, [showToast, perPage, filterStatus]);
 
-  useEffect(() => { fetchJurnals(); }, [fetchJurnals]);
+  const fetchStats = useCallback(async () => {
+    try {
+      const res = await jurnalApi.list({ per_page: 10000 });
+      const rawData = res.data.data;
+      const allList = ((Array.isArray(rawData) ? rawData : (rawData as any).data || []) as Jurnal[]);
+      setStats({
+        all: allList.length,
+        pending: allList.filter(j => j.status === 'pending').length,
+        verified: allList.filter(j => j.status === 'verified').length,
+        revision: allList.filter(j => j.status === 'revision').length
+      });
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('Failed to fetch stats:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
+
+  useEffect(() => {
+    fetchJurnals(1);
+  }, [filterStatus]);
 
   const handleVerify = async (id: number) => {
     setSubmitting(true);
     try {
       await jurnalApi.verify(id, catatan);
       showToast('Jurnal berhasil diverifikasi!', 'success');
-      setSelectedJurnal(null); setCatatan(''); fetchJurnals();
+      setSelectedJurnal(null); setCatatan(''); fetchJurnals(currentPage); fetchStats();
     } catch {
       showToast('Gagal memproses verifikasi.', 'error');
     } finally { setSubmitting(false); }
@@ -63,7 +106,7 @@ export default function JurnalVerifikasiPage() {
     try {
       await jurnalApi.revision(id, catatan);
       showToast('Catatan revisi berhasil dikirim.', 'success');
-      setSelectedJurnal(null); setCatatan(''); fetchJurnals();
+      setSelectedJurnal(null); setCatatan(''); fetchJurnals(currentPage); fetchStats();
     } catch {
       showToast('Gagal memproses revisi.', 'error');
     } finally { setSubmitting(false); }
@@ -76,7 +119,7 @@ export default function JurnalVerifikasiPage() {
     { key: 'revision', label: 'Revisi' },
   ];
 
-  const filtered = filterStatus === 'all' ? jurnals : jurnals.filter(j => j.status === filterStatus);
+  const filtered = jurnals;
 
   const getImgUrl = (path: string) =>
     path?.startsWith('http') ? path : `${BASE_URL}/storage/${path}`;
@@ -90,9 +133,9 @@ export default function JurnalVerifikasiPage() {
 
         {/* Stats row */}
         <div className="grid grid-cols-3 gap-3 mb-5">
-          <MiniStat label="Total" value={jurnals.length} color="text-indigo-600 bg-indigo-50"/>
-          <MiniStat label="Pending" value={jurnals.filter(j => j.status === 'pending').length} color="text-amber-600 bg-amber-50"/>
-          <MiniStat label="Verified" value={jurnals.filter(j => j.status === 'verified').length} color="text-emerald-600 bg-emerald-50"/>
+          <MiniStat label="Total" value={stats.all} color="text-indigo-600 bg-indigo-50"/>
+          <MiniStat label="Pending" value={stats.pending} color="text-amber-600 bg-amber-50"/>
+          <MiniStat label="Verified" value={stats.verified} color="text-emerald-600 bg-emerald-50"/>
         </div>
 
         {/* Filter chips */}
@@ -106,7 +149,7 @@ export default function JurnalVerifikasiPage() {
               {f.label}
               {f.key !== 'all' && (
                 <span className="text-[10px] font-black">
-                  ({jurnals.filter(j => j.status === f.key).length})
+                  ({f.key === 'pending' ? stats.pending : f.key === 'verified' ? stats.verified : stats.revision})
                 </span>
               )}
             </button>
@@ -175,6 +218,33 @@ export default function JurnalVerifikasiPage() {
                 <p className="font-semibold text-slate-500">Tidak ada jurnal {filterStatus !== 'all' ? `dengan status ${filterStatus}` : ''}</p>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {!loading && lastPage > 1 && (
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm animate-fade-in">
+            <p className="text-xs font-bold text-slate-400">
+              Halaman <span className="text-slate-800">{currentPage}</span> dari <span className="text-slate-800">{lastPage}</span> 
+              <span className="mx-2">•</span> 
+              Total <span className="text-indigo-600">{totalData}</span> Jurnal
+            </p>
+            <div className="flex gap-2">
+              <button 
+                disabled={currentPage === 1}
+                onClick={() => fetchJurnals(currentPage - 1)}
+                className="btn btn-secondary btn-sm px-4 disabled:opacity-50"
+              >
+                Sebelumnya
+              </button>
+              <button 
+                disabled={currentPage === lastPage}
+                onClick={() => fetchJurnals(currentPage + 1)}
+                className="btn btn-primary btn-sm px-4 disabled:opacity-50"
+              >
+                Selanjutnya
+              </button>
+            </div>
           </div>
         )}
       </div>

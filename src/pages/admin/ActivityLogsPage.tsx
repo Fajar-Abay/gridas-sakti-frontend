@@ -15,24 +15,41 @@ import type { ActivityLog } from '@/lib/types';
 export default function ActivityLogsPage() {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
   const { toast, showToast } = useToast();
 
-  const fetchLogs = useCallback(async () => {
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [lastPage, setLastPage] = useState(1);
+  const [totalData, setTotalData] = useState(0);
+  const [perPage] = useState(15);
+
+  const fetchLogs = useCallback(async (page = 1) => {
     setLoading(true);
     try {
-      const res = await logsApi.list();
-      const rawData = res.data.data;
-      setLogs(Array.isArray(rawData) ? rawData : (rawData as any).data || []);
+      const res = await logsApi.list({
+        page,
+        per_page: perPage,
+        search: search
+      });
+      const paginatedData = res.data.data as any;
+      setLogs(paginatedData.data || []);
+      setCurrentPage(paginatedData.current_page || 1);
+      setLastPage(paginatedData.last_page || 1);
+      setTotalData(paginatedData.total || 0);
     } catch (err) {
       showToast('Gagal memuat log aktivitas.', 'error');
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, [showToast, perPage, search]);
 
   useEffect(() => {
-    fetchLogs();
-  }, [fetchLogs]);
+    const timer = setTimeout(() => {
+      fetchLogs(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   return (
     <div className="min-h-screen">
@@ -45,7 +62,8 @@ export default function ActivityLogsPage() {
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-center mb-8">
           <div className="relative w-full sm:w-96">
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input type="text" placeholder="Cari aktivitas..." className="form-input pl-14 py-4 rounded-2xl bg-white border-slate-100 shadow-sm" />
+            <input type="text" placeholder="Cari aktivitas..." className="form-input pl-14 py-4 rounded-2xl bg-white border-slate-100 shadow-sm"
+              value={search} onChange={e => setSearch(e.target.value)} />
           </div>
           <button className="btn btn-secondary w-full sm:w-auto px-6 py-4 rounded-2xl flex items-center justify-center gap-2">
             <Filter size={18} /> Filter Lanjut
@@ -112,6 +130,33 @@ export default function ActivityLogsPage() {
                 </div>
               )}
             </div>
+
+            {/* Pagination */}
+            {!loading && lastPage > 1 && (
+              <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                <p className="text-xs font-bold text-slate-400">
+                  Halaman <span className="text-slate-800">{currentPage}</span> dari <span className="text-slate-800">{lastPage}</span> 
+                  <span className="mx-2">•</span> 
+                  Total <span className="text-indigo-600">{totalData}</span> Aktivitas
+                </p>
+                <div className="flex gap-2">
+                  <button 
+                    disabled={currentPage === 1}
+                    onClick={() => fetchLogs(currentPage - 1)}
+                    className="btn btn-secondary btn-sm px-4 disabled:opacity-50"
+                  >
+                    Sebelumnya
+                  </button>
+                  <button 
+                    disabled={currentPage === lastPage}
+                    onClick={() => fetchLogs(currentPage + 1)}
+                    className="btn btn-primary btn-sm px-4 disabled:opacity-50"
+                  >
+                    Selanjutnya
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

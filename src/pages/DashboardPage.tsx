@@ -45,13 +45,13 @@ export default function DashboardPage() {
     try {
       if (user.role === 'siswa') {
         const [jRes, pRes, prRes] = await Promise.allSettled([
-          jurnalApi.list(),
+          jurnalApi.list({ per_page: 1000 }),
           monitoringApi.profil(),
           presensiApi.today()
         ]);
         if (jRes.status === 'fulfilled') {
           const jData = jRes.value.data.data;
-          setJurnals(Array.isArray(jData) ? jData.slice(0, 5) : (jData as any).data?.slice(0, 5) || []);
+          setJurnals(Array.isArray(jData) ? jData : (jData as any).data || []);
         }
         if (pRes.status === 'fulfilled') setProfilBimbingan(pRes.value.data.data);
         if (prRes.status === 'fulfilled') setTodayPresensi(prRes.value.data.data?.presensi);
@@ -235,7 +235,7 @@ export default function DashboardPage() {
                 </div>
                 {loading ? <SkeletonList count={3}/> : (
                   <div className="space-y-2">
-                    {jurnals.length > 0 ? jurnals.map(j => (
+                    {jurnals.length > 0 ? jurnals.slice(0, 5).map(j => (
                       <div key={j.id} className="card flex items-center justify-between gap-4 py-3 px-4">
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-500 flex items-center justify-center flex-shrink-0">

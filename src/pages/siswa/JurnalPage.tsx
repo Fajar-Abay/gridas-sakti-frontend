@@ -35,6 +35,21 @@ export default function JurnalPage() {
   const [hasSubmittedToday, setHasSubmittedToday] = useState(false);
   const { toast, showToast } = useToast();
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [lastPage, setLastPage] = useState(1);
+  const [totalData, setTotalData] = useState(0);
+  const [perPage] = useState(15);
+
+  // Stats state
+  const [stats, setStats] = useState({
+    all: 0,
+    verified: 0,
+    pending: 0,
+    revision: 0,
+    draft: 0
+  });
+
   const [lokasiData, setLokasiData] = useState<LokasiPKL | null>(null);
   const [liveCoords, setLiveCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [inArea, setInArea] = useState(true);
@@ -61,23 +76,45 @@ export default function JurnalPage() {
   const [fotoFile, setFotoFile] = useState<File | null>(null);
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
 
-  const fetchJurnals = useCallback(async () => {
+  const fetchJurnals = useCallback(async (page = 1) => {
     setLoading(true);
     try {
-      const res = await jurnalApi.list();
-      const rawData = res.data.data;
-      setJurnals(Array.isArray(rawData) ? rawData : (rawData as any).data || []);
+      const res = await jurnalApi.list({
+        page,
+        per_page: perPage,
+        search: search.trim() || undefined,
+        status: filterStatus !== 'all' ? filterStatus : undefined
+      });
+      const paginatedData = res.data.data as any;
+      setJurnals(paginatedData.data || []);
+      setCurrentPage(paginatedData.current_page || 1);
+      setLastPage(paginatedData.last_page || 1);
+      setTotalData(paginatedData.total || 0);
     } catch {
       showToast('Gagal memuat jurnal.', 'error');
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, [showToast, perPage, search, filterStatus]);
 
-  const checkTodaySubmission = useCallback((data: Jurnal[]) => {
-    const today = new Date().toISOString().split('T')[0];
-    const exists = data.some(j => j.created_at.split('T')[0] === today);
-    setHasSubmittedToday(exists);
+  const fetchStats = useCallback(async () => {
+    try {
+      const res = await jurnalApi.list({ per_page: 1000 });
+      const rawData = res.data.data;
+      const allList = ((Array.isArray(rawData) ? rawData : (rawData as any).data || []) as Jurnal[]);
+      setStats({
+        all: allList.length,
+        verified: allList.filter(j => j.status === 'verified').length,
+        pending: allList.filter(j => j.status === 'pending').length,
+        revision: allList.filter(j => j.status === 'revision').length,
+        draft: allList.filter(j => j.status === 'draft').length
+      });
+      const today = new Date().toISOString().split('T')[0];
+      const exists = allList.some(j => j.created_at.split('T')[0] === today);
+      setHasSubmittedToday(exists);
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('Failed to fetch stats:', err);
+    }
   }, []);
 
   const fetchKategoris = useCallback(async () => {
@@ -98,20 +135,24 @@ export default function JurnalPage() {
 
   useEffect(() => {
     if (isPlaced) {
-      fetchJurnals();
       fetchKategoris();
       fetchLokasi();
+      fetchStats();
     }
     const interval = setInterval(() => {
       const latest = getUser();
       if (JSON.stringify(latest) !== JSON.stringify(user)) setUser(latest);
     }, 2000);
     return () => clearInterval(interval);
-  }, [isPlaced, fetchJurnals, fetchKategoris, fetchLokasi, user]);
+  }, [isPlaced, fetchKategoris, fetchLokasi, fetchStats, user]);
 
   useEffect(() => {
-    checkTodaySubmission(jurnals);
-  }, [jurnals, checkTodaySubmission]);
+    if (!isPlaced) return;
+    const timer = setTimeout(() => {
+      fetchJurnals(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [isPlaced, search, filterStatus]);
 
   const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -157,10 +198,18 @@ export default function JurnalPage() {
         fd.append('longitude', String(liveCoords.lon));
       }
 
-      if (editItem) { await jurnalApi.update(editItem.id, fd); showToast('Jurnal diperbarui!', 'success'); }
-      else { await jurnalApi.create(fd); showToast('Jurnal berhasil dikirim!', 'success'); }
-
-      resetForm(); fetchJurnals();
+      if (editItem) { 
+        await jurnalApi.update(editItem.id, fd); 
+        showToast('Jurnal diperbarui!', 'success'); 
+        resetForm();
+        fetchJurnals(currentPage);
+      } else { 
+        await jurnalApi.create(fd); 
+        showToast('Jurnal berhasil dikirim!', 'success'); 
+        resetForm();
+        fetchJurnals(1);
+      }
+      fetchStats();
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Gagal menyimpan jurnal.', 'error');
     } finally {
@@ -187,16 +236,20 @@ export default function JurnalPage() {
 
   const handleDelete = async (id: number) => {
     if (!window.confirm('Hapus jurnal ini?')) return;
-    try { await jurnalApi.delete(id); showToast('Jurnal dihapus.', 'success'); fetchJurnals(); }
+    try { 
+      await jurnalApi.delete(id); 
+      showToast('Jurnal dihapus.', 'success'); 
+      const targetPage = (currentPage > 1 && jurnals.length === 1) ? currentPage - 1 : currentPage;
+      fetchJurnals(targetPage);
+      fetchStats();
+    }
     catch { showToast('Gagal menghapus jurnal.', 'error'); }
   };
 
   const getImgUrl = (path: string) =>
     path?.startsWith('http') ? path : `${BASE_URL}/storage/${path}`;
 
-  const filteredJurnals = jurnals
-    .filter(j => filterStatus === 'all' || j.status === filterStatus)
-    .filter(j => !search || j.judul_kegiatan.toLowerCase().includes(search.toLowerCase()));
+  const filteredJurnals = jurnals;
 
   if (!isPlaced) {
     return (
@@ -220,11 +273,11 @@ export default function JurnalPage() {
   }
 
   const statFilters: { key: FilterStatus; label: string; count: number; color: string }[] = [
-    { key: 'all', label: 'Semua', count: jurnals.length, color: 'text-indigo-600 bg-indigo-50' },
-    { key: 'verified', label: 'Disetujui', count: jurnals.filter(j => j.status === 'verified').length, color: 'text-emerald-600 bg-emerald-50' },
-    { key: 'pending', label: 'Menunggu', count: jurnals.filter(j => j.status === 'pending').length, color: 'text-amber-600 bg-amber-50' },
-    { key: 'revision', label: 'Revisi', count: jurnals.filter(j => j.status === 'revision').length, color: 'text-red-600 bg-red-50' },
-    { key: 'draft', label: 'Draft', count: jurnals.filter(j => j.status === 'draft').length, color: 'text-slate-500 bg-slate-100' },
+    { key: 'all', label: 'Semua', count: stats.all, color: 'text-indigo-600 bg-indigo-50' },
+    { key: 'verified', label: 'Disetujui', count: stats.verified, color: 'text-emerald-600 bg-emerald-50' },
+    { key: 'pending', label: 'Menunggu', count: stats.pending, color: 'text-amber-600 bg-amber-50' },
+    { key: 'revision', label: 'Revisi', count: stats.revision, color: 'text-red-600 bg-red-50' },
+    { key: 'draft', label: 'Draft', count: stats.draft, color: 'text-slate-500 bg-slate-100' },
   ];
 
   const selectedKategori = kategoris.find(k => k.id === form.kategori_jurnal_id);
@@ -395,6 +448,33 @@ export default function JurnalPage() {
                 </button>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {!loading && lastPage > 1 && (
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm animate-fade-in">
+            <p className="text-xs font-bold text-slate-400">
+              Halaman <span className="text-slate-800">{currentPage}</span> dari <span className="text-slate-800">{lastPage}</span> 
+              <span className="mx-2">•</span> 
+              Total <span className="text-indigo-600">{totalData}</span> Jurnal
+            </p>
+            <div className="flex gap-2">
+              <button 
+                disabled={currentPage === 1}
+                onClick={() => fetchJurnals(currentPage - 1)}
+                className="btn btn-secondary btn-sm px-4 disabled:opacity-50"
+              >
+                Sebelumnya
+              </button>
+              <button 
+                disabled={currentPage === lastPage}
+                onClick={() => fetchJurnals(currentPage + 1)}
+                className="btn btn-primary btn-sm px-4 disabled:opacity-50"
+              >
+                Selanjutnya
+              </button>
+            </div>
           </div>
         )}
       </div>

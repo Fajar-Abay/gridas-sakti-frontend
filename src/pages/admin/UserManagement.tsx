@@ -43,6 +43,15 @@ export default function UserManagement() {
   const [totalData, setTotalData] = useState(0);
   const [perPage] = useState(15);
 
+  // Stats state
+  const [stats, setStats] = useState({
+    all: 0,
+    siswa: 0,
+    guru: 0,
+    pembimbing: 0,
+    admin: 0
+  });
+
   const fetchUsers = useCallback(async (page = 1) => {
     setLoading(true);
     try {
@@ -62,6 +71,23 @@ export default function UserManagement() {
     finally { setLoading(false); }
   }, [showToast, perPage, search, filterRole]);
 
+  const fetchStats = useCallback(async () => {
+    try {
+      const res = await userApi.list({ per_page: 10000 });
+      const rawData = res.data.data;
+      const allList = ((Array.isArray(rawData) ? rawData : (rawData as any).data || []) as User[]);
+      setStats({
+        all: allList.length,
+        siswa: allList.filter(u => u.role === 'siswa').length,
+        guru: allList.filter(u => u.role === 'guru').length,
+        pembimbing: allList.filter(u => u.role === 'pembimbing').length,
+        admin: allList.filter(u => u.role === 'admin').length
+      });
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('Failed to fetch stats:', err);
+    }
+  }, []);
+
   const fetchRefs = useCallback(async () => {
     try {
       const [jRes, kRes, iRes] = await Promise.all([jurusanApi.list(), kelasApi.list(), industriApi.list()]);
@@ -79,7 +105,10 @@ export default function UserManagement() {
     return () => clearTimeout(timer);
   }, [search, filterRole]); // Trigger juga saat filterRole berubah
 
-  useEffect(() => { fetchRefs(); }, [fetchRefs]);
+  useEffect(() => { 
+    fetchRefs(); 
+    fetchStats();
+  }, [fetchRefs, fetchStats]);
 
   const openModal = (item: User | null = null) => {
     setEditItem(item);
@@ -98,13 +127,19 @@ export default function UserManagement() {
     try {
       if (editItem) { await userApi.update(editItem.id, formData); showToast('User diperbarui.', 'success'); }
       else { await userApi.create(formData); showToast('User ditambahkan.', 'success'); }
-      closeModal(); fetchUsers();
+      closeModal(); fetchUsers(currentPage); fetchStats();
     } catch { showToast('Gagal menyimpan data user.', 'error'); }
   };
 
   const handleDelete = async (id: number) => {
     if (!window.confirm('Hapus user ini?')) return;
-    try { await userApi.delete(id); showToast('User dihapus.', 'success'); fetchUsers(); }
+    try { 
+      await userApi.delete(id); 
+      showToast('User dihapus.', 'success'); 
+      const targetPage = (currentPage > 1 && users.length === 1) ? currentPage - 1 : currentPage;
+      fetchUsers(targetPage); 
+      fetchStats();
+    }
     catch { showToast('Gagal menghapus user.', 'error'); }
   };
 
@@ -125,7 +160,8 @@ export default function UserManagement() {
       setImportResult(data);
       if (data.error_count === 0) showToast(`${data.success_count} data berhasil diimpor!`, 'success');
       else showToast(`${data.success_count} berhasil, ${data.error_count} gagal.`, 'error');
-      fetchUsers();
+      fetchUsers(1);
+      fetchStats();
     } catch (err: any) {
       if (err?.response?.data?.data) setImportResult(err.response.data.data);
       showToast(err?.response?.data?.message ?? 'Gagal mengimpor data.', 'error');
@@ -149,11 +185,11 @@ export default function UserManagement() {
   // Filtering sudah dilakukan di level API
 
   const roleCounts: Record<string, number> = {
-    all: totalData, 
-    siswa: filterRole === 'siswa' ? totalData : users.filter(u => u.role === 'siswa').length,
-    guru: filterRole === 'guru' ? totalData : users.filter(u => u.role === 'guru').length,
-    pembimbing: filterRole === 'pembimbing' ? totalData : users.filter(u => u.role === 'pembimbing').length,
-    admin: filterRole === 'admin' ? totalData : users.filter(u => u.role === 'admin').length,
+    all: stats.all, 
+    siswa: stats.siswa,
+    guru: stats.guru,
+    pembimbing: stats.pembimbing,
+    admin: stats.admin,
   };
 
   const roleFilters: { key: UserRole | 'all'; label: string }[] = [

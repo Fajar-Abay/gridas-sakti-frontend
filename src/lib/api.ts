@@ -252,7 +252,7 @@ export const industriApi = {
    PERIODE PKL (Penempatan)
    ════════════════════════════════════════════ */
 export const periodePklApi = {
-  list:   ()           => api.get<ApiResponse<PeriodePkl[]>>('/periode-pkl?per_page=10000'),
+  list:   (params?: any) => api.get<ApiResponse<PeriodePkl[]>>('/periode-pkl', { params: { per_page: 15, ...params } }),
   show:   (id: number) => api.get<ApiResponse<PeriodePkl>>(`/periode-pkl/${id}`),
   create: (payload: Omit<PeriodePkl, 'id'>) =>
     api.post<ApiResponse<PeriodePkl>>('/periode-pkl', payload),
@@ -271,7 +271,7 @@ export const periodePklApi = {
    ════════════════════════════════════════════ */
 export const pengajuanApi = {
   /** List semua pengajuan (Admin) */
-  listAll: () => api.get<ApiResponse<PengajuanPkl[]>>('/admin/pengajuan-pkl?per_page=10000'),
+  listAll: (params?: any) => api.get<ApiResponse<PengajuanPkl[]>>('/admin/pengajuan-pkl', { params: { per_page: 15, ...params } }),
 
   /** List pengajuan milik siswa sendiri */
   list: () => api.get<ApiResponse<PengajuanPkl[]>>('/pengajuan-pkl?per_page=1000'),
@@ -376,7 +376,7 @@ export const suratApi = {
    ════════════════════════════════════════════ */
 export const jurnalApi = {
   /** List jurnal milik siswa yang sedang login */
-  list: () => api.get<ApiResponse<Jurnal[]>>('/jurnal?per_page=10000'),
+  list: (params?: any) => api.get<ApiResponse<Jurnal[]>>('/jurnal', { params: { per_page: 15, ...params } }),
 
   /** Detail satu jurnal */
   show: (id: number) => api.get<ApiResponse<Jurnal>>(`/jurnal/${id}`),
@@ -453,7 +453,7 @@ export const profileApi = {
    ACTIVITY LOGS (Admin)
    ════════════════════════════════════════════ */
 export const logsApi = {
-  list: () => api.get<ApiResponse<ActivityLog[]>>('/logs?per_page=1000'),
+  list: (params?: any) => api.get<ApiResponse<ActivityLog[]>>('/logs', { params: { per_page: 15, ...params } }),
 };
 
 /* ════════════════════════════════════════════
@@ -488,7 +488,7 @@ export const penilaianApi = {
    VISITASI
    ════════════════════════════════════════════ */
 export const visitasiApi = {
-  list:   (params?: any) => api.get<ApiResponse<Visitasi[]>>('/visitasi', { params: { per_page: 1000, ...params } }),
+  list:   (params?: any) => api.get<ApiResponse<Visitasi[]>>('/visitasi', { params: { per_page: 15, ...params } }),
   show:   (id: number) => api.get<ApiResponse<Visitasi>>(`/visitasi/${id}`),
   create: (payload: FormData) => 
     api.post<ApiResponse<Visitasi>>('/visitasi', payload, {
