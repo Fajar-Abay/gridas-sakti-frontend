@@ -62,6 +62,24 @@ export default function RekapPresensiPage() {
     window.print();
   };
 
+  const handleExportExcel = async () => {
+    try {
+      showToast('Menyiapkan file Excel rekap absensi...', 'info');
+      const res = await presensiApi.exportExcel({ month, year });
+      const url = window.URL.createObjectURL(new Blob([res.data as any]));
+      const link = document.createElement('a');
+      link.href = url;
+      const monthLabel = MONTHS.find(m => m.value === month)?.label || 'Bulan';
+      link.setAttribute('download', `rekap_absen_pkl_${monthLabel}_${year}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      showToast('Rekap absensi berhasil diunduh.', 'success');
+    } catch {
+      showToast('Gagal mengunduh rekap absensi.', 'error');
+    }
+  };
+
   // Filter list by search term
   const filtered = rekapList.filter(item => 
     item.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -131,12 +149,20 @@ export default function RekapPresensiPage() {
             </select>
           </div>
 
-          <button
-            onClick={handlePrint}
-            className="btn btn-secondary gap-2 self-end md:self-auto border-dashed text-slate-700"
-          >
-            <Printer size={15} /> Cetak Rekapitulasi
-          </button>
+          <div className="flex gap-2 w-full md:w-auto">
+            <button
+              onClick={handlePrint}
+              className="btn btn-secondary gap-2 flex-1 md:flex-none border-dashed text-slate-700"
+            >
+              <Printer size={15} /> Cetak
+            </button>
+            <button
+              onClick={handleExportExcel}
+              className="btn btn-primary gap-2 flex-1 md:flex-none shadow-xl shadow-blue-100 flex items-center justify-center"
+            >
+              <Download size={15} /> Export Excel
+            </button>
+          </div>
         </div>
 
         {/* ── STATS CARDS ── */}

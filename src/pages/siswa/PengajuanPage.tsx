@@ -3,7 +3,7 @@
  * Pengajuan PKL — Riwayat & Form Mandiri dengan field lengkap. Redesign v2.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
@@ -42,6 +42,9 @@ export default function PengajuanPage() {
   const [loading, setLoading] = useState(true);
   const { toast, showToast } = useToast();
   const [submitting, setSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
+
+  const hasActivePengajuan = pengajuans.some(p => ['pending', 'approved', 'on_site'].includes(p.status));
 
   const [formData, setFormData] = useState(EMPTY_FORM);
 
@@ -73,10 +76,13 @@ export default function PengajuanPage() {
 
   const handleSubmitMandiri = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting || isSubmittingRef.current) return;
     if (isPlaced) { showToast('Akses dibatasi karena Anda sudah ditempatkan.', 'error'); return; }
+    if (hasActivePengajuan) { showToast('Anda sudah memiliki pengajuan yang aktif.', 'error'); return; }
     if (!formData.nama_industri.trim()) { showToast('Nama instansi wajib diisi.', 'error'); return; }
     if (!formData.alamat_lengkap.trim()) { showToast('Alamat lengkap wajib diisi.', 'error'); return; }
 
+    isSubmittingRef.current = true;
     setSubmitting(true);
     try {
       await pengajuanApi.createMandiri({
@@ -98,6 +104,7 @@ export default function PengajuanPage() {
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Gagal mengirim pengajuan.', 'error');
     } finally {
+      isSubmittingRef.current = false;
       setSubmitting(false);
     }
   };
@@ -130,7 +137,7 @@ export default function PengajuanPage() {
 
   const tabs: { key: 'riwayat' | 'mandiri'; label: string; icon: React.ReactNode }[] = [
     { key: 'riwayat', label: 'Riwayat Pengajuan', icon: <ClipboardList size={15}/> },
-    ...(!isPlaced ? [{ key: 'mandiri' as const, label: 'Tambah Instansi Baru', icon: <Plus size={15}/> }] : []),
+    ...(!isPlaced && !hasActivePengajuan ? [{ key: 'mandiri' as const, label: 'Tambah Instansi Baru', icon: <Plus size={15}/> }] : []),
   ];
 
   return (
@@ -155,6 +162,21 @@ export default function PengajuanPage() {
             <div>
               <p className="text-sm font-bold text-amber-900">Pengajuan Terkunci</p>
               <p className="text-xs text-amber-700/80">Status Anda sudah ditempatkan. Pengajuan baru tidak dapat dilakukan.</p>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Active pengajuan warning */}
+        {!isPlaced && hasActivePengajuan && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="card bg-amber-50 border-amber-200 mb-5 flex items-center gap-3"
+          >
+            <AlertCircle size={18} className="text-amber-500 flex-shrink-0"/>
+            <div>
+              <p className="text-sm font-bold text-amber-900">Pengajuan Aktif Ditemukan</p>
+              <p className="text-xs text-amber-700/80">Anda memiliki pengajuan yang sedang diproses atau sudah disetujui. Pengajuan baru tidak dapat dilakukan.</p>
             </div>
           </motion.div>
         )}
@@ -265,7 +287,7 @@ export default function PengajuanPage() {
                       <FileText size={36} className="mx-auto text-slate-200 mb-3"/>
                       <p className="font-semibold text-slate-500 mb-1">Belum ada pengajuan</p>
                       <p className="text-xs text-slate-400 mb-4">Ajukan dari daftar mitra atau tambahkan instansi sendiri.</p>
-                      {!isPlaced && (
+                      {!isPlaced && !hasActivePengajuan && (
                         <button onClick={() => setActiveTab('mandiri')} className="btn btn-primary btn-sm gap-1">
                           <Plus size={14}/> Tambah Instansi Baru
                         </button>

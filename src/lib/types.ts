@@ -151,7 +151,7 @@ export interface PengajuanPkl {
   surat_balasan?: string;
   siswa?: Siswa;
   industri?: Industri;
-  periodePkl?: PeriodePkl;
+  periode_pkl?: PeriodePkl;
   created_at: string;
   updated_at: string;
 }

@@ -200,6 +200,13 @@ export default function PresensiPage() {
   const isCheckedIn = !!todayData?.presensi;
   const isCheckedOut = isCheckedIn && !!todayData?.presensi?.jam_pulang;
 
+  const todayStr = new Date().toISOString().split('T')[0];
+  const placementMulai = todayData?.placement?.tanggal_mulai ? todayData.placement.tanggal_mulai.split(' ')[0] : null;
+  const placementSelesai = todayData?.placement?.tanggal_selesai ? todayData.placement.tanggal_selesai.split(' ')[0] : null;
+
+  const isBeforeStart = hasPlacement && placementMulai && todayStr < placementMulai;
+  const isAfterEnd = hasPlacement && placementSelesai && todayStr > placementSelesai;
+
   return (
     <div className="min-h-screen">
       <Helmet>
@@ -220,6 +227,22 @@ export default function PresensiPage() {
             <p className="font-bold text-slate-700 mb-1">Penempatan PKL Belum Aktif</p>
             <p className="text-xs text-slate-400 max-w-md mx-auto">
               Anda tidak dapat melakukan presensi karena belum memiliki penempatan industri yang aktif atau disetujui Hubin.
+            </p>
+          </div>
+        ) : isBeforeStart ? (
+          <div className="card border-dashed text-center py-12">
+            <Calendar size={48} className="mx-auto text-indigo-500 mb-3" />
+            <p className="font-bold text-slate-700 mb-1">Periode PKL Belum Dimulai</p>
+            <p className="text-xs text-slate-400 max-w-md mx-auto">
+              Periode PKL Anda resmi dimulai pada tanggal <strong>{new Date(placementMulai!).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>. Silakan lakukan presensi setelah tanggal tersebut.
+            </p>
+          </div>
+        ) : isAfterEnd ? (
+          <div className="card border-dashed text-center py-12">
+            <CheckCircle size={48} className="mx-auto text-emerald-500 mb-3" />
+            <p className="font-bold text-slate-700 mb-1">Periode PKL Telah Berakhir</p>
+            <p className="text-xs text-slate-400 max-w-md mx-auto">
+              Periode PKL Anda telah selesai pada tanggal <strong>{new Date(placementSelesai!).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>. Terima kasih atas partisipasi Anda!
             </p>
           </div>
         ) : (
@@ -565,7 +588,7 @@ export default function PresensiPage() {
                             <Check size={12} /> Disetujui
                           </span>
                         ) : (
-                          <span className="text-slate-400 font-medium">Pending</span>
+                          <span className="text-slate-400 font-medium">Menunggu</span>
                         )}
                       </td>
                       <td className="py-3 text-slate-400 max-w-xs truncate">{r.catatan_pembimbing || '-'}</td>

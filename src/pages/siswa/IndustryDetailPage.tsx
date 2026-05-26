@@ -3,13 +3,14 @@
  * Detail lengkap industri — MoU, GPS map, kontak, deskripsi, tombol ajukan.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import TopBar from '@/components/layout/TopBar';
 import { industriApi, pengajuanApi } from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
+import { getUser } from '@/lib/auth';
 import {
   Building, MapPin, Briefcase, Phone, Mail, User,
   FileText, Send, ArrowLeft, Globe, AlertCircle
@@ -24,21 +25,54 @@ export default function IndustryDetailPage() {
   const [applying, setApplying] = useState(false);
   const { toast, showToast } = useToast();
 
+  const [user] = useState(getUser());
+  const isPlaced = user?.siswa?.status === 'sudah_ditempatkan' || user?.siswa?.status === 'selesai_pkl';
+  const [hasActivePengajuan, setHasActivePengajuan] = useState(false);
+  const isSubmittingRef = useRef(false);
+
   useEffect(() => {
     if (!id) return;
     setLoading(true);
-    industriApi.show(Number(id))
-      .then(res => setIndustri(res.data.data))
-      .catch(() => showToast('Gagal memuat detail industri.', 'error'))
-      .finally(() => setLoading(false));
-  }, [id]);
+    
+    Promise.allSettled([
+      industriApi.show(Number(id)),
+      pengajuanApi.list()
+    ]).then(([indRes, pengRes]) => {
+      if (indRes.status === 'fulfilled') {
+        setIndustri(indRes.value.data.data);
+      } else {
+        showToast('Gagal memuat detail industri.', 'error');
+      }
+
+      if (pengRes.status === 'fulfilled') {
+        const raw = pengRes.value.data.data;
+        const list = Array.isArray(raw) ? raw : (raw as any).data || [];
+        const hasActive = list.some((p: any) => ['pending', 'approved', 'on_site'].includes(p.status));
+        setHasActivePengajuan(hasActive);
+      }
+    }).catch(() => {
+      showToast('Gagal memuat data.', 'error');
+    }).finally(() => {
+      setLoading(false);
+    });
+  }, [id, showToast]);
 
   const handleApply = async () => {
-    if (!industri) return;
+    if (!industri || applying || isSubmittingRef.current) return;
+    if (isPlaced) {
+      showToast('Anda sudah mendapatkan penempatan PKL.', 'error');
+      return;
+    }
+    if (hasActivePengajuan) {
+      showToast('Anda sudah memiliki pengajuan yang aktif.', 'error');
+      return;
+    }
     if (!industri.is_active) {
       showToast('Industri ini sedang tidak menerima pendaftaran PKL.', 'error');
       return;
     }
+    
+    isSubmittingRef.current = true;
     setApplying(true);
     try {
       await pengajuanApi.create({ industri_id: industri.id });
@@ -46,7 +80,7 @@ export default function IndustryDetailPage() {
       navigate('/pengajuan-pkl');
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Gagal mengirim pengajuan.', 'error');
-    } finally {
+      isSubmittingRef.current = false;
       setApplying(false);
     }
   };
@@ -159,12 +193,24 @@ export default function IndustryDetailPage() {
               <p className="text-sm font-bold text-red-700">Saat ini sedang tidak menerima pendaftaran PKL.</p>
             </div>
           )}
+          {isPlaced && (
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-3">
+              <AlertCircle size={18} className="text-amber-500" />
+              <p className="text-sm font-bold text-amber-700">Anda sudah mendapatkan penempatan PKL. Pengajuan tidak dapat dilakukan.</p>
+            </div>
+          )}
+          {!isPlaced && hasActivePengajuan && (
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-3">
+              <AlertCircle size={18} className="text-amber-500" />
+              <p className="text-sm font-bold text-amber-700">Anda memiliki pengajuan aktif yang sedang diproses. Pengajuan tidak dapat dilakukan.</p>
+            </div>
+          )}
           <button
             onClick={handleApply}
-            disabled={applying || !industri.is_active}
+            disabled={applying || !industri.is_active || isPlaced || hasActivePengajuan}
             className="flex-1 btn btn-primary py-5 rounded-2xl shadow-xl shadow-blue-100 font-black text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {applying ? 'Mengirim...' : <><Send size={22} /> Ajukan PKL di Sini</>}
+            {applying ? 'Mengirim...' : (isPlaced ? 'Sudah PKL' : hasActivePengajuan ? 'Ada Pengajuan Aktif' : <><Send size={22} /> Ajukan PKL di Sini</>)}
           </button>
         </div>
       </div>

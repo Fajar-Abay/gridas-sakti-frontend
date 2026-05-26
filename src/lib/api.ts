@@ -309,17 +309,17 @@ export const pengajuanApi = {
     latitude?: number;
   }) => api.post<ApiResponse<PengajuanPkl>>('/pengajuan-pkl/mandiri', payload),
 
-  /** Admin: approve pengajuan (single) */
-  approve: (id: number) =>
-    api.post<ApiResponse<null>>(`/pengajuan-pkl/${id}/approve`),
+   /** Admin: approve pengajuan (single) */
+  approve: (id: number, payload: { tanggal_mulai: string; tanggal_selesai: string }) =>
+    api.post<ApiResponse<null>>(`/pengajuan-pkl/${id}/approve`, payload),
 
   /** Admin: reject pengajuan (single) */
   reject: (id: number, alasan_penolakan: string) =>
     api.post<ApiResponse<null>>(`/pengajuan-pkl/${id}/reject`, { alasan_penolakan }),
 
   /** Admin: Bulk actions */
-  bulkApprove: (ids: number[]) =>
-    api.post<ApiResponse<any>>('/pengajuan-pkl/bulk-approve', { ids }),
+  bulkApprove: (ids: number[], payload: { tanggal_mulai: string; tanggal_selesai: string }) =>
+    api.post<ApiResponse<any>>('/pengajuan-pkl/bulk-approve', { ids, ...payload }),
   
   bulkReject: (ids: number[], alasan_penolakan: string) =>
     api.post<ApiResponse<any>>('/pengajuan-pkl/bulk-reject', { ids, alasan_penolakan }),
@@ -327,6 +327,14 @@ export const pengajuanApi = {
   /** Siswa: Kirim pengajuan yang masih draft */
   submitDraft: (id: number) =>
     api.post<ApiResponse<null>>(`/pengajuan-pkl/${id}/submit`),
+
+  /** Admin: cancel/reset penempatan PKL */
+  cancelPlacement: (id: number) =>
+    api.post<ApiResponse<null>>(`/pengajuan-pkl/${id}/cancel-placement`),
+
+  /** Admin: update placement dates */
+  updateDates: (id: number, payload: { tanggal_mulai: string; tanggal_selesai: string }) =>
+    api.post<ApiResponse<null>>(`/pengajuan-pkl/${id}/update-dates`, payload),
 };
 
 /* ════════════════════════════════════════════
@@ -516,6 +524,7 @@ export const presensiApi = {
   verify: (id: number | 'create-manual', payload: { is_verified: boolean; catatan_pembimbing?: string; siswa_id?: number; tanggal?: string; status?: string }) =>
     api.post<ApiResponse<any>>(`/presensi/${id}/verify`, payload),
   rekap: (params?: { month: number; year: number }) => api.get<ApiResponse<any[]>>('/presensi/rekap', { params }),
+  exportExcel: (params?: { month: number; year: number }) => api.get('/presensi/rekap', { params: { ...params, export: 'excel' }, responseType: 'blob' }),
 };
 
 export default api;

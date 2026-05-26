@@ -197,20 +197,20 @@ export default function DashboardPage() {
           {user.role === 'siswa' && (
             <>
               <StatCard label="Jurnal" value={jurnals.length} icon={<BookOpen size={20}/>} color="indigo" />
-              <StatCard label="Verified" value={jurnals.filter(j => j.status === 'verified').length} icon={<CheckCircle size={20}/>} color="emerald" />
-              <StatCard label="Pending" value={jurnals.filter(j => j.status === 'pending').length} icon={<Clock size={20}/>} color="amber" />
+              <StatCard label="Terverifikasi" value={jurnals.filter(j => j.status === 'verified').length} icon={<CheckCircle size={20}/>} color="emerald" />
+              <StatCard label="Menunggu" value={jurnals.filter(j => j.status === 'pending').length} icon={<Clock size={20}/>} color="amber" />
               <StatCard label="Revisi" value={jurnals.filter(j => j.status === 'revision').length} icon={<RotateCcw size={20}/>} color="red" />
             </>
           )}
           {(user.role === 'guru' || user.role === 'pembimbing') && (
             <>
               <StatCard label="Bimbingan" value={totalSiswa} icon={<Users size={20}/>} color="indigo" span2 />
-              <StatCard label="Pending" value={totalPending} icon={<Clock size={20}/>} color="amber" span2 />
+              <StatCard label="Menunggu" value={totalPending} icon={<Clock size={20}/>} color="amber" span2 />
             </>
           )}
           {user.role === 'admin' && (
             <>
-              <StatCard label="Total User" value={totalUser} icon={<Users size={20}/>} color="indigo" />
+              <StatCard label="Total Pengguna" value={totalUser} icon={<Users size={20}/>} color="indigo" />
               <StatCard label="Siswa PKL" value={totalSiswa} icon={<GraduationCap size={20}/>} color="emerald" />
               <StatCard label="Pengajuan" value={pengajuan.length} icon={<FileText size={20}/>} color="amber" />
               <StatCard label="Ditolak" value={totalPending} icon={<RotateCcw size={20}/>} color="red" />

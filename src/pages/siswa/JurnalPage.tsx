@@ -439,7 +439,7 @@ export default function JurnalPage() {
                   {/* Left Column: Technical Context (Map & Rules) */}
                   <div className="w-full md:w-[380px] p-8 bg-slate-50/80 flex-shrink-0 space-y-8">
                     <div>
-                      <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Verification Map</h4>
+                      <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Peta Verifikasi</h4>
                       <div className="rounded-2xl overflow-hidden border-2 border-white shadow-lg">
                         {lokasiData ? (
                           <GPSMap 
@@ -449,14 +449,14 @@ export default function JurnalPage() {
                           />
                         ) : (
                           <div className="h-48 bg-slate-200 animate-pulse flex items-center justify-center text-slate-400 text-xs font-bold tracking-widest">
-                            INITIALIZING...
+                            MENGINISIALISASI...
                           </div>
                         )}
                       </div>
                     </div>
 
                     <div className="space-y-4">
-                      <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Operational Protocol</h4>
+                      <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Protokol Operasional</h4>
                       <div className="p-5 bg-white rounded-2xl border border-slate-200/60 shadow-sm space-y-3">
                         <div className="flex items-start gap-3">
                           <div className="w-6 h-6 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 flex-shrink-0">
@@ -484,13 +484,13 @@ export default function JurnalPage() {
                       <div className="grid grid-cols-1 gap-6">
                         {/* Kategori */}
                         <div className="space-y-2">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Activity Category</label>
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Kategori Aktivitas</label>
                           <SearchableSelect
-                            placeholder="Select Category..."
+                            placeholder="Pilih Kategori..."
                             options={kategoris.map(k => ({ value: k.id, label: k.nama_kategori }))}
                             value={form.kategori_jurnal_id ? { 
                               value: form.kategori_jurnal_id, 
-                              label: kategoris.find(k => k.id === form.kategori_jurnal_id)?.nama_kategori || 'Select Category'
+                              label: kategoris.find(k => k.id === form.kategori_jurnal_id)?.nama_kategori || 'Pilih Kategori'
                             } : null}
                             onChange={(opt: any) => setForm({ ...form, kategori_jurnal_id: opt?.value })}
                           />
@@ -498,11 +498,11 @@ export default function JurnalPage() {
 
                         {/* Judul */}
                         <div className="space-y-2">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Activity Title</label>
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Judul Kegiatan</label>
                           <input
                             required
                             type="text"
-                            placeholder="e.g. Infrastructure Deployment"
+                            placeholder="contoh: Pemasangan Jaringan / Deployment Server"
                             className="form-input !bg-slate-50 !border-transparent focus:!bg-white focus:!border-indigo-500 py-3 px-4 font-bold text-slate-800 placeholder:font-normal"
                             value={form.judul_kegiatan}
                             onChange={e => setForm({ ...form, judul_kegiatan: e.target.value })}
@@ -511,11 +511,11 @@ export default function JurnalPage() {
 
                         {/* Deskripsi */}
                         <div className="space-y-2">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Execution Details</label>
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Detail Pelaksanaan</label>
                           <textarea
                             required
                             rows={4}
-                            placeholder="Describe your technical steps..."
+                            placeholder="Jelaskan langkah-langkah teknis pekerjaan Anda..."
                             className="form-input !bg-slate-50 !border-transparent focus:!bg-white focus:!border-indigo-500 py-3 px-4 resize-none leading-relaxed"
                             value={form.deskripsi_pekerjaan}
                             onChange={e => setForm({ ...form, deskripsi_pekerjaan: e.target.value })}
@@ -525,17 +525,17 @@ export default function JurnalPage() {
                         {/* Row: Alat & Bahan + Foto */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                           <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Resources Used</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Alat & Bahan yang Digunakan</label>
                             <input
                               type="text"
-                              placeholder="e.g. VS Code, Server"
+                              placeholder="contoh: VS Code, Server"
                               className="form-input !bg-slate-50 !border-transparent py-3 px-4 text-xs font-medium"
                               value={form.alat_bahan}
                               onChange={e => setForm({ ...form, alat_bahan: e.target.value })}
                             />
                           </div>
                           <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Visual Evidence</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Bukti Visual (Foto)</label>
                             {fotoPreview ? (
                               <div className="relative rounded-2xl overflow-hidden border-2 border-slate-100 group">
                                 <img
@@ -554,7 +554,7 @@ export default function JurnalPage() {
                             ) : (
                               <label className="w-full h-24 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/30 transition-all group">
                                 <Camera size={20} className="text-slate-400 group-hover:text-indigo-500 transition-colors"/>
-                                <span className="text-[10px] font-black text-slate-400 group-hover:text-indigo-600 mt-2 tracking-widest uppercase">UPLOAD PHOTO</span>
+                                <span className="text-[10px] font-black text-slate-400 group-hover:text-indigo-600 mt-2 tracking-widest uppercase">UNGGAH FOTO</span>
                                 <input type="file" className="hidden" accept="image/*" onChange={handleFotoChange}/>
                               </label>
                             )}
@@ -569,23 +569,23 @@ export default function JurnalPage() {
               {/* Modal Footer (Action Bar) */}
               <div className="flex items-center justify-between px-8 py-6 border-t border-slate-100 bg-white flex-shrink-0">
                 <div className="hidden sm:block">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Submission Status</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Status Pengiriman</p>
                   <div className="flex items-center gap-2 mt-1">
                     <div className={`w-2 h-2 rounded-full ${
                       !canSubmit() ? 'bg-amber-500' : 'bg-emerald-500'
                     } animate-pulse`}/>
                     <p className="text-xs font-bold text-slate-700">
                       {!canSubmit()
-                        ? 'OUTSIDE RADIUS'
+                        ? 'DI LUAR RADIUS'
                         : liveCoords
-                        ? 'READY TO SUBMIT'
+                        ? 'SIAP DIKIRIM'
                         : 'SIAP (TANPA GPS)'}
                     </p>
                   </div>
                 </div>
                 
                 <div className="flex gap-3 w-full sm:w-auto">
-                  <button type="button" onClick={resetForm} className="btn !bg-slate-100 !text-slate-600 border-none px-8">CANCEL</button>
+                  <button type="button" onClick={resetForm} className="btn !bg-slate-100 !text-slate-600 border-none px-8">BATAL</button>
                   <button
                     type="submit"
                     form="jurnal-form"
@@ -593,8 +593,8 @@ export default function JurnalPage() {
                     className={`btn !bg-slate-900 !text-white px-10 shadow-xl shadow-slate-200 transition-all hover:scale-[1.02] active:scale-[0.98] ${!canSubmit() ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
                   >
                     {submitting
-                      ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/> WORKING...</>
-                      : <><Send size={15} className="mr-1"/> {editItem ? 'UPDATE LOG' : 'SUBMIT JURNAL'}</>
+                      ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/> MEMPROSES...</>
+                      : <><Send size={15} className="mr-1"/> {editItem ? 'PERBARUI JURNAL' : 'KIRIM JURNAL'}</>
                     }
                   </button>
                 </div>

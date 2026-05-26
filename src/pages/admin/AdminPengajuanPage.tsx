@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import TopBar from '@/components/layout/TopBar';
-import { pengajuanApi, industriApi, suratApi } from '@/lib/api';
+import { pengajuanApi, industriApi, suratApi, periodePklApi } from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { SkeletonList } from '@/components/ui/SkeletonCard';
 import Badge from '@/components/ui/Badge';
 import {
   CheckCircle2, XCircle, Clock, Building2, Search,
   CheckSquare, Square, FileText, X, Users,
+  Pencil, Trash2,
 } from 'lucide-react';
 import type { PengajuanPkl, Industri } from '@/lib/types';
 import SearchableSelect from '@/components/ui/SearchableSelect';
@@ -38,6 +39,22 @@ export default function AdminPengajuanPage() {
     jabatan_penandatangan: 'Wakasek Bidang Humas/Hubin',
     kop_sekolah: "PEMERINTAH DAERAH PROVINSI JAWA BARAT\nDINAS PENDIDIKAN\nSMK NEGERI 2 SUMEDANG\nJl. Paseh No. 70 Telp. (0261) 201089 Sumedang 45321"
   });
+
+  // Approve Modal states
+  const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
+  const [approveId, setApproveId] = useState<number | 'bulk' | null>(null);
+  const [tanggalMulai, setTanggalMulai] = useState(new Date().toISOString().split('T')[0]);
+  const [tanggalSelesai, setTanggalSelesai] = useState(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + 3);
+    return d.toISOString().split('T')[0];
+  });
+
+  // Edit Date Modal states
+  const [isEditDateModalOpen, setIsEditDateModalOpen] = useState(false);
+  const [editingPengajuan, setEditingPengajuan] = useState<PengajuanPkl | null>(null);
+  const [editTanggalMulai, setEditTanggalMulai] = useState('');
+  const [editTanggalSelesai, setEditTanggalSelesai] = useState('');
 
   const { toast, showToast } = useToast();
 
@@ -84,27 +101,68 @@ export default function AdminPengajuanPage() {
   };
 
   // Actions
-  const handleApprove = async (id: number) => {
+  const openApproveModal = (id: number | 'bulk') => {
+    setApproveId(id);
+    setTanggalMulai(new Date().toISOString().split('T')[0]);
+    const d = new Date();
+    d.setMonth(d.getMonth() + 3);
+    setTanggalSelesai(d.toISOString().split('T')[0]);
+    setIsApproveModalOpen(true);
+  };
+
+  const handleApproveSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!approveId) return;
     try {
-      await pengajuanApi.approve(id);
-      showToast('Pengajuan disetujui.', 'success');
+      if (approveId === 'bulk') {
+        const res = await pengajuanApi.bulkApprove(selectedIds, { tanggal_mulai: tanggalMulai, tanggal_selesai: tanggalSelesai });
+        showToast(`${res.data.data.berhasil?.length || 0} pengajuan berhasil disetujui.`, 'success');
+        setSelectedIds([]);
+      } else {
+        await pengajuanApi.approve(approveId, { tanggal_mulai: tanggalMulai, tanggal_selesai: tanggalSelesai });
+        showToast('Pengajuan berhasil disetujui.', 'success');
+      }
+      setIsApproveModalOpen(false);
       fetchData();
     } catch (err: any) {
-      showToast(err.response?.data?.message || 'Gagal menyetujui.', 'error');
+      showToast(err.response?.data?.message || 'Gagal menyetujui pengajuan.', 'error');
     }
   };
 
-  const handleBulkApprove = async () => {
-    if (!selectedIds.length) return;
-    if (!confirm(`Setujui ${selectedIds.length} pengajuan terpilih?`)) return;
-    
+  const openEditDateModal = (p: PengajuanPkl) => {
+    setEditingPengajuan(p);
+    const pMulai = p.periode_pkl?.tanggal_mulai ? p.periode_pkl.tanggal_mulai.split(' ')[0] : new Date().toISOString().split('T')[0];
+    const pSelesai = p.periode_pkl?.tanggal_selesai ? p.periode_pkl.tanggal_selesai.split(' ')[0] : new Date().toISOString().split('T')[0];
+    setEditTanggalMulai(pMulai);
+    setEditTanggalSelesai(pSelesai);
+    setIsEditDateModalOpen(true);
+  };
+
+  const handleEditDateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPengajuan) return;
     try {
-      const res = await pengajuanApi.bulkApprove(selectedIds);
-      showToast(`${res.data.data.berhasil?.length || 0} pengajuan berhasil disetujui.`, 'success');
-      setSelectedIds([]);
+      await pengajuanApi.updateDates(editingPengajuan.id, {
+        tanggal_mulai: editTanggalMulai,
+        tanggal_selesai: editTanggalSelesai,
+      });
+      showToast('Tanggal periode PKL berhasil diperbarui.', 'success');
+      setIsEditDateModalOpen(false);
+      setEditingPengajuan(null);
       fetchData();
-    } catch {
-      showToast('Gagal melakukan aksi massal.', 'error');
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Gagal memperbarui tanggal PKL.', 'error');
+    }
+  };
+
+  const handleCancelPlacement = async (id: number) => {
+    if (!window.confirm('Apakah Anda yakin ingin membatalkan penempatan ini? Data absen/jurnal yang terkait mungkin tidak dapat diakses dan status pengajuan akan di-reset menjadi pending.')) return;
+    try {
+      await pengajuanApi.cancelPlacement(id);
+      showToast('Penempatan berhasil dibatalkan.', 'success');
+      fetchData();
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Gagal membatalkan penempatan.', 'error');
     }
   };
 
@@ -242,7 +300,7 @@ export default function AdminPengajuanPage() {
                 <span className="font-bold">{selectedIds.length} Siswa Terpilih</span>
               </div>
               <div className="flex gap-2">
-                <button onClick={handleBulkApprove} className="px-4 py-2 bg-white text-blue-600 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-blue-50 transition-colors">
+                <button onClick={() => openApproveModal('bulk')} className="px-4 py-2 bg-white text-blue-600 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-blue-50 transition-colors">
                   <CheckCircle2 size={16} /> Setujui
                 </button>
                 <button onClick={() => setIsSuratModalOpen(true)} className="px-4 py-2 bg-blue-500 text-white border border-blue-400 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-blue-400 transition-colors">
@@ -304,16 +362,41 @@ export default function AdminPengajuanPage() {
                           </div>
                         </td>
                         <td className="p-5">{getStatusBadge(p.status)}</td>
-                        <td className="p-5 text-xs text-slate-500">{new Date(p.created_at).toLocaleDateString('id-ID')}</td>
+                        <td className="p-5 text-xs text-slate-500 font-medium">
+                          {p.status === 'pending' || p.status === 'rejected' ? (
+                            new Date(p.created_at).toLocaleDateString('id-ID')
+                          ) : p.periode_pkl ? (
+                            <span className="flex flex-col gap-0.5 whitespace-nowrap">
+                              <span className="font-bold text-slate-700">
+                                {new Date(p.periode_pkl.tanggal_mulai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                              </span>
+                              <span className="text-[10px] text-slate-400">
+                                s.d. {new Date(p.periode_pkl.tanggal_selesai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              </span>
+                            </span>
+                          ) : (
+                            <span className="text-red-500 font-bold text-xs bg-red-50 px-2.5 py-1 rounded-lg inline-block">Tanggal Belum Diatur</span>
+                          )}
+                        </td>
                         <td className="p-5 text-right">
                           <div className="flex justify-end gap-1">
                             {p.status === 'pending' && (
                               <>
-                                <button onClick={() => handleApprove(p.id)} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors">
+                                <button onClick={() => openApproveModal(p.id)} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Setujui Pengajuan">
                                   <CheckCircle2 size={20} />
                                 </button>
-                                <button onClick={() => openRejectModal(p.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                                <button onClick={() => openRejectModal(p.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Tolak Pengajuan">
                                   <XCircle size={20} />
+                                </button>
+                              </>
+                            )}
+                            {(p.status === 'approved' || p.status === 'on_site') && (
+                              <>
+                                <button onClick={() => openEditDateModal(p)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit Tanggal PKL">
+                                  <Pencil size={18} />
+                                </button>
+                                <button onClick={() => handleCancelPlacement(p.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Batalkan/Reset Penempatan">
+                                  <Trash2 size={18} />
                                 </button>
                               </>
                             )}
@@ -335,6 +418,84 @@ export default function AdminPengajuanPage() {
       </div>
 
       {/* Modals are handled below for brevity, but they should be defined similarly to earlier */}
+      <AnimatePresence>
+        {isEditDateModalOpen && editingPengajuan && (
+          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsEditDateModalOpen(false)} />
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white rounded-[32px] p-8 w-full max-w-md shadow-2xl">
+              <h3 className="text-xl font-black text-slate-800 mb-2">Edit Tanggal Periode PKL</h3>
+              <p className="text-slate-500 text-sm mb-6">Ubah tanggal mulai dan selesai kegiatan PKL siswa: <strong>{editingPengajuan.siswa?.user?.name}</strong></p>
+              
+              <form onSubmit={handleEditDateSubmit} className="space-y-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Tanggal Mulai PKL</label>
+                  <input 
+                    type="date" 
+                    required 
+                    className="form-input rounded-xl py-3 px-4" 
+                    value={editTanggalMulai} 
+                    onChange={e => setEditTanggalMulai(e.target.value)} 
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Tanggal Selesai PKL</label>
+                  <input 
+                    type="date" 
+                    required 
+                    className="form-input rounded-xl py-3 px-4" 
+                    value={editTanggalSelesai} 
+                    onChange={e => setEditTanggalSelesai(e.target.value)} 
+                  />
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <button type="button" onClick={() => setIsEditDateModalOpen(false)} className="flex-1 btn btn-secondary py-4 rounded-2xl font-bold">Batal</button>
+                  <button type="submit" className="flex-[2] btn btn-primary py-4 rounded-2xl font-black">Simpan Perubahan</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isApproveModalOpen && (
+          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsApproveModalOpen(false)} />
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white rounded-[32px] p-8 w-full max-w-md shadow-2xl">
+              <h3 className="text-xl font-black text-slate-800 mb-2">Setujui Pengajuan PKL</h3>
+              <p className="text-slate-500 text-sm mb-6">Tentukan tanggal mulai dan selesai kegiatan PKL siswa.</p>
+              
+              <form onSubmit={handleApproveSubmit} className="space-y-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Tanggal Mulai PKL</label>
+                  <input 
+                    type="date" 
+                    required 
+                    className="form-input rounded-xl py-3 px-4" 
+                    value={tanggalMulai} 
+                    onChange={e => setTanggalMulai(e.target.value)} 
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Tanggal Selesai PKL</label>
+                  <input 
+                    type="date" 
+                    required 
+                    className="form-input rounded-xl py-3 px-4" 
+                    value={tanggalSelesai} 
+                    onChange={e => setTanggalSelesai(e.target.value)} 
+                  />
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <button type="button" onClick={() => setIsApproveModalOpen(false)} className="flex-1 btn btn-secondary py-4 rounded-2xl font-bold">Batal</button>
+                  <button type="submit" className="flex-[2] btn btn-primary py-4 rounded-2xl font-black">Setujui</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {isRejectModalOpen && (
           <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">

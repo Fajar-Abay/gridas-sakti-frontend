@@ -3,7 +3,7 @@
  * Daftar Mitra Industri — redesign v2.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
@@ -28,14 +28,33 @@ export default function IndustryListPage() {
   const { toast, showToast } = useToast();
   const navigate = useNavigate();
 
+  const [hasActivePengajuan, setHasActivePengajuan] = useState(false);
+  const [applyingId, setApplyingId] = useState<number | null>(null);
+  const isSubmittingRef = useRef(false);
+
   const fetchIndustries = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await industriApi.list();
-      const raw = res.data.data;
-      setIndustris(Array.isArray(raw) ? raw : (raw as any).data || []);
+      const [indRes, pengRes] = await Promise.allSettled([
+        industriApi.list(),
+        pengajuanApi.list()
+      ]);
+
+      if (indRes.status === 'fulfilled') {
+        const raw = indRes.value.data.data;
+        setIndustris(Array.isArray(raw) ? raw : (raw as any).data || []);
+      } else {
+        showToast('Gagal memuat daftar industri.', 'error');
+      }
+
+      if (pengRes.status === 'fulfilled') {
+        const raw = pengRes.value.data.data;
+        const list = Array.isArray(raw) ? raw : (raw as any).data || [];
+        const hasActive = list.some((p: any) => ['pending', 'approved', 'on_site'].includes(p.status));
+        setHasActivePengajuan(hasActive);
+      }
     } catch {
-      showToast('Gagal memuat daftar industri.', 'error');
+      showToast('Gagal memuat data.', 'error');
     } finally {
       setLoading(false);
     }
@@ -44,13 +63,18 @@ export default function IndustryListPage() {
   useEffect(() => { fetchIndustries(); }, [fetchIndustries]);
 
   const handleApply = async (id: number) => {
-    if (isPlaced) { showToast('Anda sudah mendapatkan penempatan PKL.', 'error'); return; }
+    if (isPlaced || hasActivePengajuan || isSubmittingRef.current) return;
+    
+    isSubmittingRef.current = true;
+    setApplyingId(id);
     try {
       await pengajuanApi.create({ industri_id: id });
       showToast('Pengajuan berhasil dikirim!', 'success');
       navigate('/pengajuan-pkl');
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Gagal mengirim pengajuan.', 'error');
+      isSubmittingRef.current = false;
+      setApplyingId(null);
     }
   };
 
@@ -78,6 +102,16 @@ export default function IndustryListPage() {
             <AlertCircle size={18} className="text-amber-500 flex-shrink-0"/>
             <p className="text-sm text-amber-800 font-semibold">
               Anda sudah mendapatkan penempatan PKL. Pengajuan tidak dapat dilakukan.
+            </p>
+          </div>
+        )}
+
+        {/* Active pengajuan warning */}
+        {!isPlaced && hasActivePengajuan && (
+          <div className="card bg-amber-50 border-amber-200 mb-4 flex items-center gap-3">
+            <AlertCircle size={18} className="text-amber-500 flex-shrink-0"/>
+            <p className="text-sm text-amber-800 font-semibold">
+              Anda memiliki pengajuan aktif yang sedang diproses. Pengajuan tidak dapat dilakukan.
             </p>
           </div>
         )}
@@ -161,11 +195,24 @@ export default function IndustryListPage() {
 
                 <div className="flex gap-2">
                   <button
-                    disabled={isPlaced || i.sisa_kuota === 0}
+                    disabled={isPlaced || hasActivePengajuan || i.sisa_kuota === 0 || applyingId !== null}
                     onClick={() => handleApply(i.id!)}
                     className="flex-1 btn btn-primary btn-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Send size={13}/> {isPlaced ? 'Sudah PKL' : 'Ajukan'}
+                    {applyingId === i.id ? (
+                      <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"/>
+                    ) : (
+                      <Send size={13}/>
+                    )}
+                    <span className="ml-1">
+                      {applyingId === i.id
+                        ? 'Mengirim...'
+                        : isPlaced
+                        ? 'Sudah PKL'
+                        : hasActivePengajuan
+                        ? 'Ada Pengajuan Aktif'
+                        : 'Ajukan'}
+                    </span>
                   </button>
                   <button
                     onClick={() => navigate(`/daftar-industri/${i.id}`)}
@@ -198,9 +245,9 @@ export default function IndustryListPage() {
               </p>
             </div>
             <button
-              disabled={isPlaced}
+              disabled={isPlaced || hasActivePengajuan}
               onClick={() => navigate('/pengajuan-pkl')}
-              className={`btn flex-shrink-0 ${isPlaced ? 'btn-secondary opacity-50 cursor-not-allowed' : 'bg-white text-slate-900 hover:bg-slate-100'}`}
+              className={`btn flex-shrink-0 ${isPlaced || hasActivePengajuan ? 'btn-secondary opacity-50 cursor-not-allowed' : 'bg-white text-slate-900 hover:bg-slate-100'}`}
             >
               Tambah Instansi
             </button>
